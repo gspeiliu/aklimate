@@ -1,10 +1,5 @@
 ## (c) Vlado Uzunangelov 2017                                                             ## uzunangelov@gmail.com
 
-##source("./junkle-utils.R",chdir=TRUE)
-##source("./utils.R",chdir=TRUE)
-##source("Spicer/Spicer.R",chdir=TRUE)
-##source("Spicer/Spicer-classify.R",chdir=TRUE)
-
 library(foreach)
 library(doParallel)
 library(ranger)
@@ -21,29 +16,23 @@ library(abind)
 ##i.e. c("cnv","cnv_gistic") is not OK, but c("MUTA:HOT","MUTA:NONSENSE") is
 
 ## always add - vector of dat column names that are to be included with each fset
-junkle <- function(dat,
+aklimate <- function(dat,
                    dat.grp,
                    lbls,
                    fsets,
                    always.add=NULL,
                    rf.pars=list(),
-                   junkle.pars=list(),
+                   akl_pars=list(),
                    store.kernels=FALSE,
                    verbose=FALSE) {
 
     rf.pars <- rf.pars.default(rf.pars)
 
     ##for sorage purposes only
-    rf.pars$always.add.vars <- always.add    
-    if(is.null(junkle.pars$topn)) junkle.pars$topn <- 5 
-    if(is.null(junkle.pars$cvlen)) junkle.pars$cvlen <- 100 
-    if(is.null(junkle.pars$nfold)) junkle.pars$nfold <- 5  
-    if(is.null(junkle.pars$lamb)) junkle.pars$lamb <- c(-8,3)  
+    rf.pars$always.add.vars <- always.add
 
+    akl_pars<-aklimate_pars_default(akl_pars)
 
-    junkle.pars$subsetCV <- if(is.null(junkle.pars$subsetCV)) TRUE else as.logical(match.arg(as.character(junkle.pars$subsetCV),c("TRUE","FALSE")))
-
-    if(is.null(junkle.pars$type)) junkle.pars$type <- "response" 
 
     ##########################################################
 
@@ -55,7 +44,7 @@ junkle <- function(dat,
            },
            regression={
                lbls <- data.frame(labels=lbls)
-               
+
            },
            error("Trying a method that is not implemented yet!"))
 
@@ -65,15 +54,15 @@ junkle <- function(dat,
     #######################################
 
     rf.out <- train.forest.stats(dat,dat.grp,fsets,lbls,rf.pars,NULL,"_",verbose)
-    
+
 
 
     ##overall
-    idx <- rownames(rf.out$predictions.match)[sort(unique(unlist(lapply(1:ncol(rf.out$predictions.match),function(x) head(which(rf.out$predictions.match[,x]),n=junkle.pars$topn)))))]
+    idx <- rownames(rf.out$predictions.match)[sort(unique(unlist(lapply(1:ncol(rf.out$predictions.match),function(x) head(which(rf.out$predictions.match[,x]),n=akl_pars$topn)))))]
 
     ## ##multiclass extensions
     if(rf.pars$ttype=="multiclass"){
-        lvls<-levels(lbls[,1])        
+        lvls<-levels(lbls[,1])
         ##ltn<-2*length(idx)
         lpm<-foreach(j=1:nrow(rf.out$predictions),.combine=rbind)%docomb% {
             confM<-caret::confusionMatrix(factor(rf.out$predictions[j,],levels=levels(lbls[,1])),
@@ -92,8 +81,8 @@ junkle <- function(dat,
 
 
             clvl<-which(lbls[,1]==lvls[i])
-            oopick<-sort(unique(unlist(lapply(1:length(clvl),function(x) head(which(rf.out$predictions.match[oo,clvl[x]]),n=junkle.pars$topn/2)))))
-            
+            oopick<-sort(unique(unlist(lapply(1:length(clvl),function(x) head(which(rf.out$predictions.match[oo,clvl[x]]),n=akl_pars$topn/2)))))
+
             unique(c(rownames(lpm)[oo[oopick]],idx[which(lpm[idx,i]>quantile(lpm[,i],0.95))]))
 
         }
@@ -111,7 +100,7 @@ junkle <- function(dat,
     idx <- rf.out$pars.local[idx,,drop=FALSE]
 
     ###########################################################
-    
+
     rf.models <- train.forest.kernels(dat,
                                       dat.grp,
                                       fsets,
@@ -133,7 +122,7 @@ junkle <- function(dat,
     medianl <- sapply(1:length(rf.models),function(x) median(sapply(rf.models[[x]]$forest$child.nodeIDs, function(x) length(x[[1]]))))
     rf.models <- rf.models[medianl>=3]
 
-    if(is.null(junkle.pars$c.elnet)) {
+    if(is.null(akl_pars$c.elnet)) {
             ##you have to subset dat and idx.train, otherwise it will construct the
     ##test kernels!!
         k.out <- forest.to.kernel.oob(rf.models,
@@ -144,21 +133,21 @@ junkle <- function(dat,
                               idx.train,
                               "_",
                               verbose)
-        
-        
 
-        mkl.pars <- cv.grid(nkern=dim(k.out)[3],len=junkle.pars$cvlen,lam.b=junkle.pars$lamb)
-        if(!junkle.pars$subsetCV) mkl.pars$nkern <- dim(k.out)[3]
+
+
+        mkl.pars <- cv_grid(nkern=dim(k.out)[3],len=akl_pars$cvlen,lam.b=akl_pars$lamb)
+        if(!akl_pars$subsetCV) mkl.pars$nkern <- dim(k.out)[3]
 
         kcv <- kernel.cv(k.out,
                          lbls[idx.train,1],
                          mkl.pars,
-                         junkle.pars$nfold,
+                         akl_pars$nfold,
                          rf.pars$ttype,
                          rf.pars$bin.perf,
                          NULL)
 
-        if(junkle.pars$subsetCV) {
+        if(akl_pars$subsetCV) {
             if(rf.pars$ttype=="multiclass"){
                 ll<-sapply(rf.models,function(x) length(x$multic.rel))
                 sel <- 1:which(cumsum(ll)>kcv$pars[kcv$best.id,"nkern"])[1]
@@ -174,7 +163,7 @@ junkle <- function(dat,
     } else {
 
         sel <- 1:length(rf.models)
-        
+
     }
 
 
@@ -187,87 +176,87 @@ junkle <- function(dat,
                               "_",
                               verbose)
 
-    
-    if(is.null(junkle.pars$c.elnet)) {
-            junkle.model <- spicer(k.out[idx.train,idx.train,1:kcv$pars[kcv$best.id,"nkern"],drop=FALSE],
+
+    if(is.null(akl_pars$c.elnet)) {
+            akl_model <- spicer(k.out[idx.train,idx.train,1:kcv$pars[kcv$best.id,"nkern"],drop=FALSE],
                             lbls[idx.train,1],
                                    C=c(kcv$pars[kcv$best.id,"lam1"],
                                        kcv$pars[kcv$best.id,"lam2"]),
-                            opt=list(regname="elasticnet",display=1,wghts=NULL)) 
+                            opt=list(regname="elasticnet",display=1,wghts=NULL))
 
         } else {
-            junkle.model <- spicer(k.out[idx.train,idx.train,,drop=FALSE],
+            akl_model <- spicer(k.out[idx.train,idx.train,,drop=FALSE],
                             lbls[idx.train,1],
-                            C=junkle.pars$c.elnet,
+                            C=akl_pars$c.elnet,
                                    opt=list(regname="elasticnet",display=1,wghts=NULL))
         }
 
-    
-    junkle.preds <- predict(junkle.model,
+
+    preds <- predict(akl_model,
                             k.out[idx.train,idx.train,,drop=FALSE],
-                            type=junkle.pars$type)
-               
+                            type=akl_pars$type)
+
     res <- list(rf.stats=rf.out,
                 kernels=if(store.kernels) k.out else NULL,
-                kernel.cv=if(is.null(junkle.pars$c.elnet)) kcv else NULL,
+                kernel.cv=if(is.null(akl_pars$c.elnet)) kcv else NULL,
                 rf.models=rf.models,
-                junkle.model=junkle.model,
+                akl_model=akl_model,
                 fsets=rownames(idx),
                 rf.pars.global=rf.pars,
                 always.add=always.add,
                 rf.pars.local=idx,
-                junkle.pars=junkle.pars,
+                akl_pars=akl_pars,
                 dat.grp=dat.grp,
                 idx.train=idx.train,
-                preds.train=junkle.preds)
+                preds.train=preds)
 
-    class(res) <- c("junkle",class(res))
+    class(res) <- c("aklimate",class(res))
 
     return(res)
 
-}## end of junkle
+}## end of aklimate
 
 ############################################################
 
-##dat - same input as junkle
-predict.junkle <- function(jklobj,
+##dat - same input as aklimate
+predict.aklimate <- function(akl_obj,
                            dat,
                            fsets,
                            kernels=NULL,
                            store.kernels=FALSE)
 {
 
-    idx.train <- jklobj$idx.train
+    idx.train <- akl_obj$idx.train
     ##check all idx.train indices are in the data provided
     stopifnot(length(idx.train)==length(intersect(rownames(dat),idx.train)))
-    
+
     idx.test <- setdiff(rownames(dat),idx.train)
-    ##if no idx.test , then stop 
+    ##if no idx.test , then stop
     if (length(idx.test)==0) stop("No test samples to make predictions on!")
 
 
-    
-    if(is.null(kernels)) {
-        active <- if(jklobj$rf.pars.global$ttype=="multiclass") unique(unlist(lapply(jklobj$junkle.model,function(x) names(x$sorted_kern_weight)))) else names(jklobj$junkle.model$sorted_kern_weight)
 
-        active<-names(jklobj$rf.models)[unname(sapply(gsub("\\+","\\\\+",
-                                                                  names(jklobj$rf.models)),
+    if(is.null(kernels)) {
+        active <- if(akl_obj$rf.pars.global$ttype=="multiclass") unique(unlist(lapply(akl_obj$akl_model,function(x) names(x$sorted_kern_weight)))) else names(akl_obj$akl_model$sorted_kern_weight)
+
+        active<-names(akl_obj$rf.models)[unname(sapply(gsub("\\+","\\\\+",
+                                                                  names(akl_obj$rf.models)),
                                                       function(x) sum(grepl(x,active,fixed=TRUE))>0))]
 
-        kernels <- forest.to.kernel(jklobj$rf.models[active],
+        kernels <- forest.to.kernel(akl_obj$rf.models[active],
                                     dat,
-                                    jklobj$dat.grp,
+                                    akl_obj$dat.grp,
                                     fsets,
-                                    jklobj$always.add,
+                                    akl_obj$always.add,
                                     idx.train,
                                     "_",
                                     TRUE)
 
         }
 
-    out <- predict(jklobj$junkle.model,
+    out <- predict(akl_obj$akl_model,
                    kernels[idx.train,idx.test,, drop=FALSE],
-                   type=jklobj$junkle.pars$type)
+                   type=akl_obj$akl_pars$type)
 
     return(list(preds=out,kernels=if(store.kernels) kernels else NULL))
 }
