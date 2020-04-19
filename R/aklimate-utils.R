@@ -134,6 +134,18 @@ clean.names <- function(names) {
     return(res)
 }
 
+collapse_weights<-function(patterns, weights){
+
+  res<-rep(0,length(patterns))
+  names(res)<-patterns
+  for(i in patterns){
+    res[i]<-sum(weights[grepl(i,names(weights))])
+  }
+
+  res<-sort(res[res>0],decreasing = TRUE)
+  return(res)
+}
+
 ##Produces a combined data frame of properly named features from all data types used
 ##dat - a list of data.frames sample x feature that will be collapsed into one sample x feature df
 ## the names of dat will become the suffixes of the features in a given data type ( to differentiate entries with the same name from different data types)
