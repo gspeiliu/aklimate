@@ -397,12 +397,10 @@ select.metric <- function(preds,lbls,ttype,measure="roc") {
                                        acc={
                                            unname(confM$overall["Accuracy"])
                                        },
-                                       ebacc=,
                                        bacc={
                                            unname(mean(
                                                confM$byClass[,"Balanced Accuracy"]))
                                        },
-                                       emar=,
                                        mar={
                                            unname(mean(
                                                confM$byClass[,"Sensitivity"]))
@@ -507,11 +505,19 @@ rf.pars.default <- function(rf.pars=list()) {
     if(is.null(rf.pars$sample.frac)) rf.pars$sample.frac <- ifelse(rf.pars$replace,1,0.5)
     rf.pars$ttype <- match.arg(rf.pars$ttype,c("binary","regression","unsupervised","multiclass"))
     rf.pars$importance <- match.arg(rf.pars$importance,c("impurity_corrected","permutation","impurity"))
+    rf.pars$metric <- match.arg(rf.pars$metric,c("roc","pr","acc","bacc","mar","rmse","rsq","mae","pearson","spearman"))
 
-    ##this needs to be quoted out since we allow multiple metrics now
-    ##rf.pars$bin.perf <- match.arg(rf.pars$bin.perf,c("roc","pr","acc","bacc","mar","rmse","rsq","mae","pearson","spearman"))
-    ##oob.cv needs to have at least two entries - ntree + some parameter, otherwise errors occur
-    if (is.null(rf.pars$oob.cv)) rf.pars$oob.cv <- data.frame(min.node.prop=0.05,mtry.prop=0.1,ntree=1000)
+    ##paramaters for oob.cv
+    ##the list should include ntree as a minimum, since the CV part will be run on forests with fewer trees
+    ## for speed of computation
+    ## The list should include at least one more parameter, otherwise RR ranking is done with the parameters
+    ## specified above (min.node.prop, min.nfeat,mtry.prop)
+    if (is.null(rf.pars$oob.cv)) rf.pars$oob.cv <- data.frame(min.node.prop=rf.pars$min.node.prop,
+                                                              mtry.prop=rf.pars$mtry.prop,
+                                                              ntree=rf.pars$ntree/2,
+                                                              check.names=FALSE,
+                                                              stringsAsFactors = FALSE)
+
     return(rf.pars)
 }
 
@@ -616,9 +622,8 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
         idx.train <- rownames(lbls)
 
     grp.suff <- create.grp.suff(dat.grp,intron=sep)
-
-
     ##train models
+
 
     if(verbose) {
         print(date())
@@ -634,7 +639,6 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
             tt <- foreach(i=iter(fsets)) %docomb% {
 
                 feats<-extract.features(colnames(dat),i,j)
-                ##feats <- colnames(dat)[colnames(dat)%in%expand.names(i,j,sep)]
 
                 if(length(feats)<rf.pars.global$min.nfeat) return(NULL)
 
@@ -652,9 +656,7 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
 
 
                 if(!is.valid.forest(rf,3)) return(list(metric=NA,imps=NA,preds=NA))
-                ##metrics <- sapply(rf.pars.global$bin.perf,function(x) select.metric(rf$predictions,lbls[,1],rf.pars.global$ttype,x))
-                ##metric <- abs(prod(metrics))*ifelse(any(sign(metrics)<0),-1,1)
-                metric <- select.metric(rf$predictions,lbls[,1],rf.pars.global$ttype,rf.pars.global$bin.perf)
+                metric <- select.metric(rf$predictions,lbls[,1],rf.pars.global$ttype,rf.pars.global$metric)
 
 
                 ############
@@ -1005,7 +1007,7 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
         proximity
     }
 
-    kerns <- abind(kerns,along=3)
+    kerns <- abind::abind(kerns,along=3)
 
     if(verbose) {
         print(date())
@@ -1237,7 +1239,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
         proximity
     }
 
-    kerns <- abind(kerns,along=3)
+    kerns <- abind::abind(kerns,along=3)
 
     if(verbose) {
         print(date())
