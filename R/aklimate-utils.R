@@ -866,11 +866,6 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
         curr.dat <- dat[,unique(c(feats,always.add)),drop=FALSE]
         curr.dat <- mlr::createDummyFeatures(curr.dat)
 
-        ## if(ncol(curr.dat)>1) {
-        ##     composite <- compose.features(as.matrix(curr.dat),"composite",3,ncol(curr.dat),idx.train)
-        ##     curr.dat <- cbind(curr.dat,data.frame(composite))
-        ## }
-
         q <- 1
         p <- 2
 
@@ -890,7 +885,13 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
             } else {
                 extensions<-"combined"
             }
+
+
             knames<-c(paste(i,extensions,sep=sep))
+            ##just for names, we change "_combined" to ""
+            ##this way non-multicalss weight names are not plastered with "_combined at end
+            knames<-gsub(paste0(sep,"combined$"),"",knames)
+
 
             proximity<-replicate(length(extensions),matrix(1,length(idx.train),length(idx.test)))
 
@@ -914,6 +915,7 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
                                        probs=q)
                     }
 
+                    ##first matrix is reserved for combined matrix
                     if("combined"%in%extensions) {
                         proximity[,,j+1]<-1-(pA/sA)
                     } else {
@@ -1084,6 +1086,9 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
             }
 
             knames<-c(paste(i,extensions,sep=sep))
+            ##just for names, we change "_combined" to ""
+            ##this way non-multicalss weight names are not plastered with "_combined at end
+            knames<-gsub(paste0(sep,"combined$"),"",knames)
 
             proximity<-replicate(length(extensions),matrix(1,length(idx.train),length(idx.test)))
 
@@ -1113,6 +1118,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
                                      probs=q)
                     }
 
+                    ##first matrix is reserved for combined matrix
                     if("combined"%in%extensions) {
                         proximity[,,j+1]<-1-(pA/sA)
                     } else {
