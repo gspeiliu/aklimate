@@ -99,7 +99,7 @@ sample.sim.vect.eucl.mask <- function(source,target,mask) {
 
 ##Computes relative contribution of each data type to the prediction accuracy of a junkle model
 ##suffs - vector of suffixes of participating feature types
-##ranked - vactor of ranked features produced by rank.features.jklm()$all.weights
+##ranked - vactor of ranked features produced by rank.features()$all.weights
 rank.importance.type <- function(suffs,ranked,intron="_") {
 
     ranked.pos <- ranked[ranked>0]
@@ -1271,10 +1271,10 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 
 
 
-rank.features.jklm <- function(jklmobj) {
+rank.features <- function(akl_obj) {
 
-    if(jklmobj$rf.pars.global$ttype=="multiclass"){
-        imps.list <- foreach(k=iter(jklmobj$junkle.model))%do%{
+    if(akl_obj$rf.pars.global$ttype=="multiclass"){
+        imps.list <- foreach(k=iter(akl_obj$junkle.model))%do%{
                     wghts <- k$sorted_kern_weight
                     imps <- foreach(i=iter(names(wghts)))%do%{
                         ##you need to anchor the patterns at the start of the string
@@ -1282,9 +1282,9 @@ rank.features.jklm <- function(jklmobj) {
                         ##other pathway names
                         ##this will become a problem if the matching substring is
                         ##at the beginning of the longer name
-                        ind<-which(stringr:::str_detect(i,paste0("^",names(jklmobj$rf.models))))
+                        ind<-which(stringr:::str_detect(i,paste0("^",names(akl_obj$rf.models))))
 
-                        res <- sort(ranger:::importance(jklmobj$rf.models[[ind]]),decreasing=TRUE)
+                        res <- sort(ranger:::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
                         res <- res[res>0]
                         res
                     }
@@ -1314,10 +1314,10 @@ rank.features.jklm <- function(jklmobj) {
 
 
     } else {
-        wghts <- jklmobj$junkle.model$sorted_kern_weight
+        wghts <- akl_obj$junkle.model$sorted_kern_weight
         imps <- foreach(i=iter(names(wghts)))%do%{
-            ind<-which(stringr:::str_detect(i,names(jklmobj$rf.models)))
-            res <- sort(ranger:::importance(jklmobj$rf.models[[ind]]),decreasing=TRUE)
+            ind<-which(stringr:::str_detect(i,names(akl_obj$rf.models)))
+            res <- sort(ranger:::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
             res <- res[res>0]
             res
         }
@@ -1346,7 +1346,7 @@ rank.features.jklm <- function(jklmobj) {
 ##you should pre-filter set.wghts and feat.wghts to the # you want plotted!!
 ##the first entry in should.scale is the one whose column heatmap is used if cluster.col is TRUE
 ##the last column in lbls is the one that we use to group columns
-plot.heatmap.jklm <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,fsets=NULL,should.scale=NULL,ordered=1,fsize=6,cluster_rows=TRUE,cluster_cols=TRUE,hsplit=NULL){
+plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,fsets=NULL,should.scale=NULL,ordered=1,fsize=6,cluster_rows=TRUE,cluster_cols=TRUE,hsplit=NULL){
 
 
     library(ComplexHeatmap)
@@ -1753,23 +1753,23 @@ plot.heatmap.jklm <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=N
 ################################
 ##need to fix labels for feature sets so that they appear as numbers in graph and have their separate legend
 
-plot.network.jklm <- function(jklm,fsets,title,sep="_",topn=c(10,30)) {
+plot.network <- function(akl_obj,fsets,title,sep="_",topn=c(10,30)) {
 
     require(RColorBrewer)
     require(scales)
     qual_col_pals  <-  brewer.pal.info[brewer.pal.info$category == 'qual',]
     colors <-  unique(unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))))
 
-    set.wghts <- jklm$junkle.model$sorted_kern_weight
-    feat.wghts <- rank.features.jklm(jklm)
+    set.wghts <- akl_obj$junkle.model$sorted_kern_weight
+    feat.wghts <- rank.features(akl_obj)
 
     set.wghts <- set.wghts[1:min(length(set.wghts),topn[1])]
     feat.wghts <- feat.wghts[1:min(length(feat.wghts),topn[2])]
 
 
     adj.df <- foreach(i=iter(names(set.wghts)))%docomb%{
-        expand(split.set.suff(i,jklm$dat.grp),nms=c("fset.ind","feat.suff"))
-        feats <- jklm$rf.models[[i]]$forest$independent.variable.names[jklm$rf.models[[i]]$forest$independent.variable.names%in%names(feat.wghts)]
+        expand(split.set.suff(i,akl_obj$dat.grp),nms=c("fset.ind","feat.suff"))
+        feats <- akl_obj$rf.models[[i]]$forest$independent.variable.names[akl_obj$rf.models[[i]]$forest$independent.variable.names%in%names(feat.wghts)]
         if(length(feats)>0){
             return(data.frame(from=toupper(fset.ind),to=toupper(feats),weight=set.wghts[i]*feat.wghts[feats],color="grey",stringsAsFactors = FALSE,check.names=FALSE) )
         } else {
@@ -1782,7 +1782,7 @@ plot.network.jklm <- function(jklm,fsets,title,sep="_",topn=c(10,30)) {
 
 
     nodes.set <- foreach(i=iter(names(set.wghts)),.combine=rbind)%docomb%{
-        expand(split.set.suff(i,jklm$dat.grp),nms=c("fset.ind","feat.suff"))
+        expand(split.set.suff(i,akl_obj$dat.grp),nms=c("fset.ind","feat.suff"))
         data.frame(nodeID=toupper(fset.ind),
                    nodeID.clean=gsub("genesigdb_|_up$|_down$|_dn$|^go_","",fset.ind,ignore.case = TRUE),
                    type=TRUE,
@@ -1792,7 +1792,7 @@ plot.network.jklm <- function(jklm,fsets,title,sep="_",topn=c(10,30)) {
 
     }
 
-    unique.grps <- unique(unlist(jklm$dat.grp))
+    unique.grps <- unique(unlist(akl_obj$dat.grp))
     colors.feats <- colors[2:(length(unique.grps)+1)]
     nodes.feat <- foreach(i=iter(names(feat.wghts)),.combine=rbind)%docomb%{
         expand(split.set.suff(i,unique.grps),nms=c("feat","feat.suff"))
