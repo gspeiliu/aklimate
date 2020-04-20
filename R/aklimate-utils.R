@@ -105,13 +105,9 @@ rank.importance.type <- function(suffs,ranked,intron="_") {
     ranked.pos <- ranked[ranked>0]
     res <- sapply(suffs,function(x) {
 
-        ## ##need to add $ at end to protect against suffs that are included in other suffs
-        ## ##(cnv, cnv_gistic)
-        ## ## then need to add first part of regex to pick up one hot encoded variables
+        ## ##This breaks down if you have suffixes that are a substring of another suffix         ## at beginning - i.e. (cnv, cnv_gistic)
+        ##use gistic_cnv, cnv instead
 
-        ## ##sum(ranked.pos[grepl(paste0(intron,x,"\\.","|",intron,x,"$"),names(ranked.pos),perl=TRUE)])
-
-        ##correction to previous comments - not necessary if you use proper suffixes
         sum(ranked.pos[grepl(paste0(intron,x),names(ranked.pos),perl=TRUE)])
     })
 
@@ -184,9 +180,6 @@ split.set.suff <- function(combined,dat.grp,...){
     fset.ind <- strsplit(combined,paste(grp.suff,collapse="|"))[[1]][1]
     feat.ind <- which(grp.suff==strsplit(combined,fset.ind,fixed=TRUE)[[1]][2])
     feat.suff <- if(length(feat.ind)>0) dat.grp[[feat.ind]] else NULL
-    ## fset.ind <- strsplit(combined,grp.suff)[[1]][1]
-
-    ## return(list(fset.ind=fset.ind,feat.suff=dat.grp))
 
     return(list(fset.ind=fset.ind,feat.suff=feat.suff))
 }
