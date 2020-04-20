@@ -230,7 +230,6 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
                           returnTrain = TRUE)
 
     .loss <- switch(type,
-                    unsupervised=,
                     multiclass=,
                     binary="logit",
                     regression="square")
@@ -253,13 +252,11 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
                 return(NULL)
             })
             .rtype <- switch(type,
-                             unsupervised=,
                              multiclass=,
                              binary="probability",
                              regression="response")
 
             switch(type,
-                   unsupervised=,
                    binary=,
                    regression={
                        if(is.null(mod) || length(mod$sorted_kern_weight)==0) {
@@ -346,7 +343,6 @@ correct.regression <- function(preds,lbls) {
 select.metric <- function(preds,lbls,ttype,measure="roc") {
 
     metric <- switch(ttype,
-           unsupervised=,
            binary={
 
                ##auroc
@@ -513,11 +509,17 @@ rf.pars.default <- function(rf.pars=list()) {
     if(is.null(rf.pars$min.nfeat)) rf.pars$min.nfeat <- 15
     if(is.null(rf.pars$mtry.prop)) rf.pars$mtry.prop <- 0.25
     if(is.null(rf.pars$regression.q)) rf.pars$regression.q <- 0.05
-    rf.pars$replace <- if(is.null(rf.pars$replace)) FALSE else as.logical(match.arg(as.character(rf.pars$replace),c("TRUE","FALSE")))
     if(is.null(rf.pars$sample.frac)) rf.pars$sample.frac <- ifelse(rf.pars$replace,1,0.5)
-    rf.pars$ttype <- match.arg(rf.pars$ttype,c("binary","regression","unsupervised","multiclass"))
-    rf.pars$importance <- match.arg(rf.pars$importance,c("impurity_corrected","permutation","impurity"))
-    rf.pars$metric <- match.arg(rf.pars$metric,c("roc","pr","acc","bacc","mar","rmse","rsq","mae","pearson","spearman"))
+
+    rf.pars$replace <- if(is.null(rf.pars$replace)) FALSE else as.logical(match.arg(as.character(rf.pars$replace),c("TRUE","FALSE")))
+
+    rf.pars$ttype <- if(is.null(rf.pars$ttype)) "binary" else match.arg(rf.pars$ttype,c("binary","regression","multiclass"))
+
+    rf.pars$importance <- if(is.null(rf.pars$importance)) "impurity_corrected" else match.arg(rf.pars$importance,c("impurity_corrected","permutation","impurity"))
+
+    rf.pars$metric <- if(is.null(rf.pars$metric)) "roc" else match.arg(rf.pars$metric,c("roc","pr","acc","bacc","mar","rmse","rsq","mae","pearson","spearman"))
+
+    rf.pars$unordered.factors <- if(is.null(rf.pars$unrodered.factors)) "order" else match.arg(rf.pars$unordered.factors,c("order","ignore","partition"))
 
     ##paramaters for oob.cv
     ##the list should include ntree as a minimum, since the CV part will be run on forests with fewer trees
@@ -543,7 +545,7 @@ aklimate_pars_default<-function(akl_pars=list()) {
 
   akl_pars$subsetCV <- if(is.null(akl_pars$subsetCV)) TRUE else as.logical(match.arg(as.character(akl_pars$subsetCV),c("TRUE","FALSE")))
 
-  if(is.null(akl_pars$type)) akl_pars$type <- "response"
+  if(is.null(akl_pars$type)) akl_pars$type <- "response" else match.arg(akl_pars$type,c("response","probability"))
   return(akl_pars)
 
 }
@@ -560,17 +562,10 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
 
     idx.train <- rownames(lbls)
 
-    dat <- mlr::createDummyFeatures(dat)
-
-        ## if(ncol(dat)>1) {
-        ##     composite <- compose.features(as.matrix(dat),"composite",3,ncol(dat),idx.train)
-
-        ##     dat <- cbind(dat,data.frame(composite))
-        ## }
+    ##dat <- mlr::createDummyFeatures(dat)
 
     dat <- cbind(lbls,dat[idx.train,,drop=FALSE])
     switch(rf.pars$ttype,
-           unsupervised=,
            multiclass=,
            binary={
 
@@ -583,11 +578,10 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
                             num.trees=rf.pars$ntree,
                             mtry=ceiling((ncol(dat)-1)*rf.pars$mtry.prop),
                             min.node.size=ceiling(nrow(dat)*rf.pars$min.node.prop),
-                            case.weights=rf.pars$weights,
                             class.weights = rf.pars$class.weights,
                             num.threads=1,
                             probability=TRUE,
-                            respect.unordered.factors = FALSE,
+                            respect.unordered.factors = rf.pars$unordered.factors,
                             importance=rf.pars$importance,
                             write.forest=TRUE,
                             keep.inbag=TRUE,
@@ -604,11 +598,10 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
                             num.trees=rf.pars$ntree,
                             mtry=ceiling((ncol(dat)-1)*rf.pars$mtry.prop),
                             min.node.size=ceiling(nrow(dat)*rf.pars$min.node.prop),
-                            case.weights=rf.pars$weights,
                             num.threads=1,
                             importance=rf.pars$importance,
                             write.forest=TRUE,
-                            respect.unordered.factors = FALSE,
+                            respect.unordered.factors = rf.pars$unordered.factors,
                             keep.inbag=TRUE,
                             replace=rf.pars$replace)
            },
@@ -876,7 +869,7 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
 
 
         curr.dat <- dat[,unique(c(feats,always.add)),drop=FALSE]
-        curr.dat <- mlr::createDummyFeatures(curr.dat)
+        ##curr.dat <- mlr::createDummyFeatures(curr.dat)
 
         q <- 1
         p <- 2
@@ -1068,7 +1061,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
         ##feats <- colnames(dat)[colnames(dat)%in%expand.names(fsets[[fset.ind]],feat.suff,sep)]
 
         curr.dat <- dat[,unique(c(feats,always.add)),drop=FALSE]
-        curr.dat <- mlr::createDummyFeatures(curr.dat)
+        ##curr.dat <- mlr::createDummyFeatures(curr.dat)
 
         q <- 1
         p <- 2
