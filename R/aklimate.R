@@ -1,15 +1,5 @@
 ## (c) Vlado Uzunangelov 2017 ## uzunangelov@gmail.com
 
-library(foreach)
-library(doParallel)
-library(ranger)
-library(plyr)
-library(abind)
-## library(survcomp)
-
-`%docomb%` <- if (getDoParRegistered()) `%dopar%` else `%do%`
-
-
 ## dat is samples by features data frame where columns might be of different type (convert to data
 ## table later on?)  dat.grp - a list of the suffixes used to differentiate dat columns - can be more
 ## than one together - they should be distinct from one another so that making them regexes does not

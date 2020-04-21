@@ -1,7 +1,6 @@
 # (c) Vlado Uzunangelov 2017                                                             ## uzunangelov@gmail.com
 
-##library(foreach)
-library(doParallel)
+library(abind)
 library(ranger)
 library(ROCR)
 library(caret)
@@ -10,7 +9,11 @@ library(proxy)
 library(purrr)
 library(pracma)
 library(stringr)
-`%docomb%` <- if(getDoParRegistered()) `%dopar%` else `%do%`
+
+#' @importFrom foreach %do%
+#' @importFrom foreach %dopar%
+#' @importFrom foreach foreach
+`%docomb%` <- if(foreach::getDoParRegistered()) `%dopar%` else `%do%`
 
 
 ##reads a file in a listt format,
@@ -61,8 +64,8 @@ write_df <- function(df,row.names.id='',out.file){
 ##the statistics computed by comp.func(list.1,list.2[[x]],...)
 get_cross_table <- function(list.1,list.2,comp.func,parallel=FALSE,...) {
     if (parallel) {
-        cores <- if(getDoParRegistered()) getDoParWorkers() else detectCores()-2
-        out <- mcmapply(comp.func,target=list.2,MoreArgs=c(list(source=list.1),list(...)),mc.cores=cores)
+        cores <- if(foreach::getDoParRegistered()) foreach::getDoParWorkers() else parallel::detectCores()-2
+        out <- parallel::mcmapply(comp.func,target=list.2,MoreArgs=c(list(source=list.1),list(...)),mc.cores=cores)
     } else {
         out <- mapply(comp.func,target=list.2,MoreArgs=c(list(source=list.1),list(...)))
     }
@@ -238,7 +241,7 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
 
         res1 <- foreach(j=1:length(kfolds))%do%{
             mod <- tryCatch({
-                spicer(kerns[kfolds[[j]],kfolds[[j]],1:pars[i,"nkern"] ,drop=FALSE],
+                SPICER::spicer(kerns[kfolds[[j]],kfolds[[j]],1:pars[i,"nkern"] ,drop=FALSE],
                            lbls[kfolds[[j]]],
                            C=c(pars[i,"lam1"],pars[i,"lam2"]),
                        opt=list(loss=.loss,regname="elasticnet",
@@ -563,7 +566,7 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
            binary={
 
 
-               rf <- ranger(data=dat[idx.train,,drop=FALSE],
+               rf <- ranger::ranger(data=dat[idx.train,,drop=FALSE],
                             dependent.variable.name="labels",
                             always.split.variables=always.split,
                             classification = TRUE,
@@ -584,7 +587,7 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
            regression={
 
 
-               rf <- ranger(data=dat[idx.train,,drop=FALSE],
+               rf <- ranger::ranger(data=dat[idx.train,,drop=FALSE],
                             dependent.variable.name="labels",
                             always.split.variables=always.split,
                             sample.fraction = rf.pars$sample.frac,
@@ -829,8 +832,6 @@ train.forest.kernels <- function(dat,dat.grp,fsets,lbls,rf.pars.local,rf.pars.gl
 
 forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.train=rownames(dat),sep="_",verbose=FALSE){
 
-    library(abind)
-
     ##check all idx.train indices are in the data provided
     stopifnot(length(idx.train)==length(intersect(rownames(dat),idx.train)))
 
@@ -856,7 +857,7 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
         }
 
 
-        expand(split.set.suff(i,dat.grp),nms=c("fset.ind","feat.suff"))
+        SPICER::expand(split.set.suff(i,dat.grp),nms=c("fset.ind","feat.suff"))
 
         feats<-extract.features(colnames(dat),fsets[[fset.ind]],feat.suff)
 
@@ -1020,8 +1021,6 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
 }
 
 forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.train=rownames(dat),sep="_",verbose=FALSE){
-
-    library(abind)
 
     ##check all idx.train indices are in the data provided
     stopifnot(length(idx.train)==length(intersect(rownames(dat),idx.train)))
@@ -1267,7 +1266,7 @@ rank.features <- function(akl_obj) {
                         ##other pathway names
                         ##this will become a problem if the matching substring is
                         ##at the beginning of the longer name
-                        ind<-which(stringr:::str_detect(i,paste0("^",names(akl_obj$rf.models))))
+                        ind<-which(stringr::str_detect(i,paste0("^",names(akl_obj$rf.models))))
 
                         res <- sort(ranger:::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
                         res <- res[res>0]
@@ -1301,8 +1300,8 @@ rank.features <- function(akl_obj) {
     } else {
         wghts <- akl_obj$akl_model$sorted_kern_weight
         imps <- foreach(i=iter(names(wghts)))%do%{
-            ind<-which(stringr:::str_detect(i,names(akl_obj$rf.models)))
-            res <- sort(ranger:::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
+            ind<-which(stringr::str_detect(i,names(akl_obj$rf.models)))
+            res <- sort(ranger::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
             res <- res[res>0]
             res
         }
@@ -1336,7 +1335,7 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
 
     library(ComplexHeatmap)
     library(circlize)
-    library(foreach)
+
     ##require(colorRamps)
     require(RColorBrewer)
 
