@@ -97,9 +97,10 @@ sample.sim.vect.eucl.mask <- function(source,target,mask) {
 
 
 
-##Computes relative contribution of each data type to the prediction accuracy of a junkle model
+##Computes relative contribution of each data type to the prediction accuracy of a aklimate model
 ##suffs - vector of suffixes of participating feature types
 ##ranked - vactor of ranked features produced by rank.features()$all.weights
+#' @export
 rank.importance.type <- function(suffs,ranked,intron="_") {
 
     ranked.pos <- ranked[ranked>0]
@@ -130,6 +131,7 @@ clean.names <- function(names) {
     return(res)
 }
 
+#' @export
 collapse_weights<-function(patterns, weights){
 
   res<-rep(0,length(patterns))
@@ -214,7 +216,7 @@ cv_grid <- function(nkern=500,len=250,lam.b=c(-5,5)){
 
 
 ##pars - a data.frame with columns named lam1, lam2 & nkern giving the parameters to be tried with MKL
-kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type="binary",measure="bacc",wghts=NULL) {
+kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type="binary",measure="bacc") {
 
     ############################
     kfolds <- createFolds(if(type=="regression") lbls else factor(lbls),
@@ -240,7 +242,7 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
                            lbls[kfolds[[j]]],
                            C=c(pars[i,"lam1"],pars[i,"lam2"]),
                        opt=list(loss=.loss,regname="elasticnet",
-                           display=1,wghts=wghts[kfolds[[j]]]))
+                           display=1))
             },error=function(err){
                 return(NULL)
             })
@@ -297,12 +299,10 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
     pars <- pars[cc,]
 
     #####################
-    ##o <- order(pars$lam1+pars$lam2)
     o <- order(res$metric,decreasing=TRUE)
     res <- res[o,]
     pars <- pars[o,]
 
-    ##pars.id <- which.max(res$metric)
     pars.id <- round(0.1*nrow(res))
     return(list(res=res,pars=pars,best.id=pars.id))
 }
@@ -350,7 +350,7 @@ select.metric <- function(preds,lbls,ttype,measure="roc") {
                                  ROCR::performance(rocr.pred,"auc")@y.values[[1]]
                                 },
                              pr={
-                                 perf <- performance(rocr.pred,"prec","rec")
+                                 perf <- ROCR::performance(rocr.pred,"prec","rec")
                                  perf@y.values[[1]][1] <- 1
                                  pracma::trapz(perf@x.values[[1]],perf@y.values[[1]])
                              },
@@ -824,7 +824,7 @@ train.forest.kernels <- function(dat,dat.grp,fsets,lbls,rf.pars.local,rf.pars.gl
 }
 
 #####
-##dat - same input as junkle; by default idx.train are presumed to be all indices in rows of dat - if some of those are idx.test, specify accordingly
+##dat - same input as aklimate; by default idx.train are presumed to be all indices in rows of dat - if some of those are idx.test, specify accordingly
 ##dat rownames (samples) should be ordered accordingly
 
 forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.train=rownames(dat),sep="_",verbose=FALSE){
@@ -1255,12 +1255,11 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
     return(kerns)
 }
 
-
-
+#' @export
 rank.features <- function(akl_obj) {
 
     if(akl_obj$rf.pars.global$ttype=="multiclass"){
-        imps.list <- foreach(k=iter(akl_obj$junkle.model))%do%{
+        imps.list <- foreach(k=iter(akl_obj$akl_model))%do%{
                     wghts <- k$sorted_kern_weight
                     imps <- foreach(i=iter(names(wghts)))%do%{
                         ##you need to anchor the patterns at the start of the string
@@ -1300,7 +1299,7 @@ rank.features <- function(akl_obj) {
 
 
     } else {
-        wghts <- akl_obj$junkle.model$sorted_kern_weight
+        wghts <- akl_obj$akl_model$sorted_kern_weight
         imps <- foreach(i=iter(names(wghts)))%do%{
             ind<-which(stringr:::str_detect(i,names(akl_obj$rf.models)))
             res <- sort(ranger:::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
@@ -1746,7 +1745,7 @@ plot.network <- function(akl_obj,fsets,title,sep="_",topn=c(10,30)) {
     qual_col_pals  <-  brewer.pal.info[brewer.pal.info$category == 'qual',]
     colors <-  unique(unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))))
 
-    set.wghts <- akl_obj$junkle.model$sorted_kern_weight
+    set.wghts <- akl_obj$akl_model$sorted_kern_weight
     feat.wghts <- rank.features(akl_obj)
 
     set.wghts <- set.wghts[1:min(length(set.wghts),topn[1])]
