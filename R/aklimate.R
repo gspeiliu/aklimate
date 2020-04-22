@@ -131,12 +131,12 @@ aklimate <- function(dat, dat.grp, lbls, fsets, always.add = NULL, rf.pars = lis
 
 
     if (is.null(akl_pars$c.elnet)) {
-        akl_model <- spicer(k.out[idx.train, idx.train, 1:kcv$pars[kcv$best.id, "nkern"], drop = FALSE],
+        akl_model <- SPICER::spicer(k.out[idx.train, idx.train, 1:kcv$pars[kcv$best.id, "nkern"], drop = FALSE],
             lbls[idx.train, 1], C = c(kcv$pars[kcv$best.id, "lam1"], kcv$pars[kcv$best.id, "lam2"]),
             opt = list(regname = "elasticnet", display = 1))
 
     } else {
-        akl_model <- spicer(k.out[idx.train, idx.train, , drop = FALSE], lbls[idx.train, 1], C = akl_pars$c.elnet,
+        akl_model <- SPICER::spicer(k.out[idx.train, idx.train, , drop = FALSE], lbls[idx.train, 1], C = akl_pars$c.elnet,
             opt = list(regname = "elasticnet", display = 1))
     }
 

@@ -1,15 +1,5 @@
 # (c) Vlado Uzunangelov 2017                                                             ## uzunangelov@gmail.com
 
-library(abind)
-library(ranger)
-library(ROCR)
-library(caret)
-library(Similarity)
-library(proxy)
-library(purrr)
-library(pracma)
-library(stringr)
-
 #' @importFrom foreach %do%
 #' @importFrom foreach %dopar%
 #' @importFrom foreach foreach
@@ -496,7 +486,7 @@ quantize.data <- function(dat,nbr=5,idx=rownames(dat)) {
 
 
 ##default parameters for RF selected individually for each feature set
-## you still need to keep the individual ones in case they are not included in oob.cv
+
 rf.pars.default <- function(rf.pars=list()) {
 
     ##rf params defaults
@@ -510,6 +500,8 @@ rf.pars.default <- function(rf.pars=list()) {
     rf.pars$replace <- if(is.null(rf.pars$replace)) FALSE else as.logical(match.arg(as.character(rf.pars$replace),c("TRUE","FALSE")))
 
     rf.pars$ttype <- if(is.null(rf.pars$ttype)) "binary" else match.arg(rf.pars$ttype,c("binary","regression","multiclass"))
+
+    rf.pars$split_rule <- if(is.null(rf.pars$split_rule)) "gini" else match.arg(rf.pars$split_rule,c("gini","hellinger","variance","beta"))
 
     rf.pars$importance <- if(is.null(rf.pars$importance)) "impurity_corrected" else match.arg(rf.pars$importance,c("impurity_corrected","permutation","impurity"))
 
@@ -568,6 +560,7 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
 
                rf <- ranger::ranger(data=dat[idx.train,,drop=FALSE],
                             dependent.variable.name="labels",
+                            splitrule = rf.pars$split_rule,
                             always.split.variables=always.split,
                             classification = TRUE,
                             sample.fraction = rf.pars$sample.frac,
@@ -589,6 +582,7 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
 
                rf <- ranger::ranger(data=dat[idx.train,,drop=FALSE],
                             dependent.variable.name="labels",
+                            splitrule = rf.pars$split_rule,
                             always.split.variables=always.split,
                             sample.fraction = rf.pars$sample.frac,
                             num.trees=rf.pars$ntree,
@@ -1050,8 +1044,6 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 
         feats<-extract.features(colnames(dat),fsets[[fset.ind]],feat.suff)
 
-        ##feats <- colnames(dat)[colnames(dat)%in%expand.names(fsets[[fset.ind]],feat.suff,sep)]
-
         curr.dat <- dat[,unique(c(feats,always.add)),drop=FALSE]
         ##curr.dat <- mlr::createDummyFeatures(curr.dat)
 
@@ -1136,7 +1128,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
                     ##using Euclidean distance on the probabilities of either class
                     ##produces the same distance matrix
                         preds <- preds[,1,]
-                        ##preds[mask] <- 0
+
                         preds[mask] <- NA
                     } else {
                         rps <- dim(preds)[2]
@@ -1148,13 +1140,13 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
                     ##need to replicate mask matrix to match
                         mask.extend <- matrix(data=apply(mask,2,rep,rps),
                                    ncol=ncol(mask)*rps)
-                        ##preds[mask.extend] <- 0
+
                         preds[mask.extend]<-NA
                     }
                 } else {
 
                     preds[mask]<-NA
-                    ##preds[mask]<-0
+
                 }
 
                 preds<-as.data.frame(t(preds))
@@ -1183,7 +1175,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 
              rownames(preds1) <- rownames(curr.dat)
 
-                ##preds1[mask]<-0
+
                 preds1[mask] <- NA
 
                 preds1<-as.data.frame(t(preds1))
