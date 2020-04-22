@@ -3,8 +3,6 @@
 #' @importFrom foreach %do%
 #' @importFrom foreach %dopar%
 #' @importFrom foreach foreach
-`%docomb%` <- if(foreach::getDoParRegistered()) `%dopar%` else `%do%`
-
 
 ##reads a file in a listt format,
 ##e.g. Name1 member1 member2 ...
@@ -34,17 +32,6 @@ write_set_list <- function(setList,out.file,delim="\t"){
 
 }
 
-##Description: Wrapper around write.table that adds the name of the first column
-##Args:
-##df - the data frame to write
-##row.names.id - name for the first column
-##out.file - name of file to write
-
-write_df <- function(df,row.names.id='',out.file){
-  output <- cbind(rownames(df),df)
-  colnames(output)[1] <-row.names.id
-  write.table(output ,file=out.file,quote=FALSE,append=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
-}
 
 ##Computes a statistic for each pair of entries in two lists
 ##list.1 - can be a data.frame (list of columns), will represent rows in output matrix
