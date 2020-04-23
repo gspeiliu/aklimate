@@ -4,14 +4,16 @@ Title: AKLIMATE : Algorithm for Kernel Learning with Approximating Tree Ensemble
 Version: 0.1.0
 Author: Vladislav (Vlado) Uzunangelov
 Maintainer: Vladislav Uzunangelov <uzunangelov@gmail.com>
-Description: AKLIMATE uses a stacked learning approach with Random Forest(RF) base learners and
-a Multiple Kernel Learning (MKL) stacked learner.
-Each RF is trained on a collection of features drawn from heterogeneous data that correspond to a 
-particular biological prior - a pathway, an experiment, or a computational prediction.
-The trees for an individual RF are then converted to an RF kernel that empirically captures 
-the degree of similarity between training samples based on that RF's biological prior.
-The stacked MKL operates on the most predictive RF kernels to create an optimal meta-kernel 
-that is used for the final predictions.
+Description: AKLIMATE uses a stacked learning approach with Random Forest(RF) base learners and 
+    a Multiple Kernel Learning (MKL) stacked learner. 
+    Each RF is trained on a collection of 
+    features drawn from heterogeneous data that correspond to a particular biological prior - 
+    a pathway, an experiment, or a computational prediction.
+    The trees for an individual RF are then converted to an RF kernel that empirically 
+    captures the degree of similarity between training samples based on that RF's 
+    biological prior.
+    The stacked MKL operates on the most predictive RF kernels to create an optimal 
+    meta-kernel that is used for the final predictions.
 Citation: http://github.com/VladoUzunangelov/aklimate
 License: GNU GPL v3.0
 Encoding: UTF-8
@@ -19,7 +21,8 @@ LazyData: true
 RoxygenNote: 6.1.0
 URL: http://github.com/VladoUzunangelov/aklimate
 BugReports: http://github.com/VladoUzunangelov/aklimate
-Depends: R (>=3.4.0)
+Depends: 
+    R (>= 3.4.0)
 Imports: 
     purrr,
     caret,

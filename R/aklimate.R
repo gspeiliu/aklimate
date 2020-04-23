@@ -1,11 +1,13 @@
 ## (c) Vlado Uzunangelov 2017 ## uzunangelov@gmail.com
 
-## dat is samples by features data frame where columns might be of different type (convert to data
-## table later on?)  dat.grp - a list of the suffixes used to differentiate dat columns - can be more
-## than one together - they should be distinct from one another so that making them regexes does not
-## cause unwanted behavior i.e. c('cnv','cnv_gistic') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is
-
-## always add - vector of dat column names that are to be included with each fset
+#' AKLIMATE : Algorithm for Kernel Learning with Approximating Tree Ensembles
+#' @param dat - samples x features data frame where columns might be of different type   #' @param dat.grp - a list of vectors, each consisting of suffixes for data types that match the ones used in dat. Each vector corresponds to a particular combination of data types that will be tested for each component RF. Only the data type combination with the
+#' best performance for a given feature set is retained.
+#' The data type suffixes should be distinct from one another so that none is a proper substring of another - i.e. c('cnv','cnv_gistic') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is
+#' @param fsets - list of prior knowledge feature sets
+#' @param lbls - vector of training data labels
+#' @param always.add - vector of dat column names that are to be included with each fset
+#' @return a model of class "aklimate" with the following fields:
 #' @export
 aklimate <- function(dat, dat.grp, lbls, fsets, always.add = NULL, rf.pars = list(), akl_pars = list(),
     store.kernels = FALSE, verbose = FALSE) {
@@ -156,7 +158,12 @@ aklimate <- function(dat, dat.grp, lbls, fsets, always.add = NULL, rf.pars = lis
 
 ############################################################
 
-## dat - same input as aklimate
+#' Compute predictions from an aklimate model
+#' @param akl_obj - an aklimate model
+#' @param dat - samples x features data frame where columns might be of different type
+#' @param fsets - list of prior knowledge feature sets
+#' @param kernels - (Optional) pre-computed kernels for the MKL prediction part. By default the test kernels are computed on the fly from the RF models stored in the aklimate object.
+#' @return A vector of predictions.
 #' @export
 predict.aklimate <- function(akl_obj, dat, fsets, kernels = NULL, store.kernels = FALSE) {
 

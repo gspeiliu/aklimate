@@ -77,9 +77,10 @@ sample.sim.vect.eucl.mask <- function(source,target,mask) {
 
 
 
-##Computes relative contribution of each data type to the prediction accuracy of a aklimate model
-##suffs - vector of suffixes of participating feature types
-##ranked - vactor of ranked features produced by rank.features()$all.weights
+#'Relative contribution of data types based on cumulative importance of features
+#' @param suffs - vector of suffixes of participating data types
+#' @param ranked - vactor of ranked features produced by rank.features()
+#' @return A vector of controbutions for each data type, normalized to a sum of 1.
 #' @export
 rank.importance.type <- function(suffs,ranked,intron="_") {
 
@@ -111,6 +112,10 @@ clean.names <- function(names) {
     return(res)
 }
 
+#' Combine entries in a vector that match a particular pattern
+#' @param patterns - vector of patterns to match
+#' @param weights - named numeric vector that needs to be collapsed based on the patterns
+#' @return A named vector of scores for each pattern, sorted from largest to smallest.
 #' @export
 collapse_weights<-function(patterns, weights){
 
@@ -121,6 +126,9 @@ collapse_weights<-function(patterns, weights){
   }
 
   res<-sort(res[res>0],decreasing = TRUE)
+
+  if (sum(res)!=sum(weights)) warning("There were unmatched or overlapping patterns in your weight aggregation call!")
+
   return(res)
 }
 
@@ -506,6 +514,8 @@ rf.pars.default <- function(rf.pars=list()) {
                                                               ntree=rf.pars$ntree/2,
                                                               check.names=FALSE,
                                                               stringsAsFactors = FALSE)
+
+    if (!"ntree"%in%colnames(rf.pars$oob.cv)||ncol(rf.pars$oob.cv)<2) stop("Misspecified rf.pars$oob.cv parameters!")
 
     return(rf.pars)
 }
@@ -1233,6 +1243,9 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
     return(kerns)
 }
 
+#' Feature importance calculation from an aklimate model
+#' @param akl_obj - an aklimate model
+#' @return A ranked vector of all features with non-zero importance.
 #' @export
 rank.features <- function(akl_obj) {
 
