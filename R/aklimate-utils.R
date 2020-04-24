@@ -490,9 +490,12 @@ rf_pars_default <- function(rf_pars=list()) {
     if(is.null(rf_pars$min_nfeat)) rf_pars$min_nfeat <- 15
     if(is.null(rf_pars$mtry_prop)) rf_pars$mtry_prop <- 0.25
     if(is.null(rf_pars$regression_q)) rf_pars$regression_q <- 0.05
-    if(is.null(rf_pars$sample_frac)) rf_pars$sample_frac <- ifelse(rf_pars$replace,1,0.5)
 
     rf_pars$replace <- if(is.null(rf_pars$replace)) FALSE else as.logical(match.arg(as.character(rf_pars$replace),c("TRUE","FALSE")))
+
+    if(is.null(rf_pars$sample_frac)) rf_pars$sample_frac <- ifelse(rf_pars$replace,1,0.5)
+
+
 
     rf_pars$ttype <- if(is.null(rf_pars$ttype)) "binary" else match.arg(rf_pars$ttype,c("binary","regression","multiclass"))
 
