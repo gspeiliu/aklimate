@@ -207,7 +207,7 @@ cv_grid <- function(nkern=500,len=250,lam_b=c(-5,5)){
 kernel_cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type="binary",measure="bacc") {
 
     ############################
-    kfolds <- createFolds(if(type=="regression") lbls else factor(lbls),
+    kfolds <- caret::createFolds(if(type=="regression") lbls else factor(lbls),
                           k=nfolds,
                           list=TRUE,
                           returnTrain = TRUE)
