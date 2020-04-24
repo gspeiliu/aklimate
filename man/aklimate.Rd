@@ -4,12 +4,12 @@
 \alias{aklimate}
 \title{AKLIMATE : Algorithm for Kernel Learning with Approximating Tree Ensembles}
 \usage{
-aklimate(dat, dat.grp, lbls, fsets, always.add = NULL,
-  rf.pars = list(), akl_pars = list(), store.kernels = FALSE,
+aklimate(dat, dat_grp, lbls, fsets, always_add = NULL,
+  rf_pars = list(), akl_pars = list(), store_kernels = FALSE,
   verbose = FALSE)
 }
 \arguments{
-\item{dat}{- samples x features data frame where columns might be of different type   #' @param dat.grp - a list of vectors, each consisting of suffixes for data types that match the ones used in dat. Each vector corresponds to a particular combination of data types that will be tested for each component RF. Only the data type combination with the
+\item{dat}{- samples x features data frame where columns might be of different type   #' @param dat_grp - a list of vectors, each consisting of suffixes for data types that match the ones used in dat. Each vector corresponds to a particular combination of data types that will be tested for each component RF. Only the data type combination with the
 best performance for a given feature set is retained.
 The data type suffixes should be distinct from one another so that none is a proper substring of another - i.e. c('cnv','cnv_gistic') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is}
 
@@ -17,7 +17,7 @@ The data type suffixes should be distinct from one another so that none is a pro
 
 \item{fsets}{- list of prior knowledge feature sets}
 
-\item{always.add}{- vector of dat column names that are to be included with each fset}
+\item{always_add}{- vector of dat column names that are to be included with each fset}
 }
 \value{
 a model of class "aklimate" with the following fields:

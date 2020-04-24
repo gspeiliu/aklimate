@@ -10,9 +10,9 @@
 ##returns a list with each line representing a separate vector object named by first entry on line and having as members subsequent entries
 read_set_list <- function(file, delim="\t") {
   l <- readLines(file)
-  l.fields <- strsplit(l, delim)
-  r <- lapply(l.fields, function(x) as.vector(x[-1]))
-  names(r) <- sapply(l.fields, "[[", 1)
+  lflds <- strsplit(l, delim)
+  r <- lapply(lflds, function(x) as.vector(x[-1]))
+  names(r) <- sapply(lflds, "[[", 1)
   return(r)
 }
 
@@ -20,58 +20,57 @@ read_set_list <- function(file, delim="\t") {
 ######################################################
 ## reverse operation of read_set_list
 
-write_set_list <- function(setList,out.file,delim="\t"){
+write_set_list <- function(setList,outfile,delim="\t"){
     #since we are appending to a file,
     #we need to check if it exists and remove it
-    if(out.file!=stdout() && file.exists(out.file)){
-        file.remove(out.file)
+    if(outfile!=stdout() && file.exists(outfile)){
+        file.remove(outfile)
     }
     for (i in 1:length(setList)){
-        write(paste(names(setList)[i],paste(setList[[i]],collapse=delim),sep=delim),file=out.file,append=TRUE)
+        write(paste(names(setList)[i],paste(setList[[i]],collapse=delim),sep=delim),file=outfile,append=TRUE)
     }
 
 }
 
 
 ##Computes a statistic for each pair of entries in two lists
-##list.1 - can be a data.frame (list of columns), will represent rows in output matrix
-##list.2 - can be a data.frame , will represent columns in output matrix
-##comp.func - a function whose arguments are source for the (full) list and target for the individual entry (vector) being compared against each element of the list
-##output is a matrix of size length(list.1)xlength(list.2) with each column representing
-##the statistics computed by comp.func(list.1,list.2[[x]],...)
-get_cross_table <- function(list.1,list.2,comp.func,parallel=FALSE,...) {
+##list1 - can be a data.frame (list of columns), will represent rows in output matrix
+##list2 - can be a data.frame , will represent columns in output matrix
+##compfunc - a function whose arguments are source for the (full) list and target for the individual entry (vector) being compared against each element of the list
+##output is a matrix of size length(list1)xlength(list2) with each column representing
+##the statistics computed by compfunc(list1,list2[[x]],...)
+get_cross_table <- function(list1,list2,compfunc,parallel=FALSE,...) {
     if (parallel) {
         cores <- if(foreach::getDoParRegistered()) foreach::getDoParWorkers() else parallel::detectCores()-2
-        out <- parallel::mcmapply(comp.func,target=list.2,MoreArgs=c(list(source=list.1),list(...)),mc.cores=cores)
+        out <- parallel::mcmapply(compfunc,target=list2,MoreArgs=c(list(source=list1),list(...)),mc.cores=cores)
     } else {
-        out <- mapply(comp.func,target=list.2,MoreArgs=c(list(source=list.1),list(...)))
+        out <- mapply(compfunc,target=list2,MoreArgs=c(list(source=list1),list(...)))
     }
     return(out)
 }
 
 ##source is a list with the rows of the output matrix
 ##target is a vector that will produce one column of the output matrix
-sample.sim.vect <- function(source,target) {
+sample_sim_vect <- function(source,target) {
     sapply(source,function(x)  {
         inds<-(!is.na(x))&(!is.na(target))
         sum(x[inds]==target[inds])/sum(inds)
     })
 }
 
-sample.sim.vect.mask <- function(source,target,mask) {
+sample_sim_vect_mask <- function(source,target,mask) {
     mapply(function(x,y,target) sum(x[y]==target[y])/sum(y),source,mask,MoreArgs = list(target=target) )
 }
 
 
-sample.sim.vect.eucl <- function(source,target) {
+sample_sim_vect_eucl <- function(source,target) {
     sapply(source,function(x) {
         inds<-(!is.na(x))&(!is.na(target))
         sqrt(sum((x[inds]-target[inds])^2))
-        ##sqrt(sum((x[inds]-target[inds])^2)/sum(inds))
     })
 }
 
-sample.sim.vect.eucl.mask <- function(source,target,mask) {
+sample_sim_vect_eucl_mask <- function(source,target,mask) {
     mapply(function(x,y,target) sqrt(sum((x[y]-target[y])^2)),source,mask,MoreArgs = list(target=target))
 }
 
@@ -79,33 +78,34 @@ sample.sim.vect.eucl.mask <- function(source,target,mask) {
 
 #'Relative contribution of data types based on cumulative importance of features
 #' @param suffs - vector of suffixes of participating data types
-#' @param ranked - vactor of ranked features produced by rank.features()
+#' @param ranked - vactor of ranked features produced by rank_features()
 #' @return A vector of controbutions for each data type, normalized to a sum of 1.
 #' @export
-rank.importance.type <- function(suffs,ranked,intron="_") {
+rank_importance_type <- function(suffs,ranked,intron="_") {
 
-    ranked.pos <- ranked[ranked>0]
+    ranked_pos <- ranked[ranked>0]
     res <- sapply(suffs,function(x) {
 
         ## ##This breaks down if you have suffixes that are a substring of another suffix         ## at beginning - i.e. (cnv, cnv_gistic)
         ##use gistic_cnv, cnv instead
 
-        sum(ranked.pos[grepl(paste0(intron,x),names(ranked.pos),perl=TRUE)])
+        sum(ranked_pos[grepl(paste0(intron,x),names(ranked_pos),perl=TRUE)])
     })
 
     res <- sort(res,decreasing=TRUE)
-    res <- res/sum(ranked.pos)
+    res <- res/sum(ranked_pos)
     return(res)
 }
 
-expand.names <- function(names,suffs,intron="_"){
+
+expand_names <- function(names,suffs,intron="_"){
     if(is.null(suffs)) return(names)
     res <- apply(expand.grid(names,suffs),1,function(x) paste(x,collapse=intron))
     return(res)
 }
 
 ##cleans up names by replacing dots with underscores
-clean.names <- function(names) {
+clean_names <- function(names) {
     ##make names converts "-" to ".", so end result is "-" -> "_"!! Be very careful!!
     res <- gsub('[.]', '_',make.names(names,unique=TRUE))
     ##res <- gsub('\\.{1}$','',res)
@@ -137,65 +137,65 @@ collapse_weights<-function(patterns, weights){
 ## the names of dat will become the suffixes of the features in a given data type ( to differentiate entries with the same name from different data types)
 ## output is a sample x feature data frame
 
-collapse.data <- function(dat,intron="_"){
+collapse_data <- function(dat,intron="_"){
 
     if(length(dat)>1){
-        same.names <- sapply(2:length(dat),function(x) identical(rownames(dat[[x]]),
+        same_names <- sapply(2:length(dat),function(x) identical(rownames(dat[[x]]),
                                                              rownames(dat[[x-1]])))
 
-        stopifnot(sum(same.names)!=(length(same.names)-1))
+        stopifnot(sum(same_names)!=(length(same_names)-1))
     }
-    dat.adj <- lapply(names(dat),function(x) {
+    dat_adj <- lapply(names(dat),function(x) {
         res <- dat[[x]]
         colnames(res) <- paste(colnames(res),x,sep=intron)
         res
     })
 
-    out <- do.call(cbind,dat.adj)
+    out <- do.call(cbind,dat_adj)
     out <- data.frame(out)
-    colnames(out) <- clean.names(colnames(out))
+    colnames(out) <- clean_names(colnames(out))
     return(out)
 }
 
 
-create.grp.suff <- function(dat.grp,intron="_") {
-    paste0(intron,sapply(dat.grp,paste,collapse=intron))
-    ##paste0(intron,paste0(dat.grp,collapse=intron))
+create_grp_suff <- function(dat_grp,intron="_") {
+    paste0(intron,sapply(dat_grp,paste,collapse=intron))
+    ##paste0(intron,paste0(dat_grp,collapse=intron))
 }
 
 
-split.set.suff <- function(combined,dat.grp,...){
-    grp.suff <- create.grp.suff(dat.grp,...)
+split_set_suff <- function(combined,dat_grp,...){
+    grp_suff <- create_grp_suff(dat_grp,...)
 
-    fset.ind <- strsplit(combined,paste(grp.suff,collapse="|"))[[1]][1]
-    feat.ind <- which(grp.suff==strsplit(combined,fset.ind,fixed=TRUE)[[1]][2])
-    feat.suff <- if(length(feat.ind)>0) dat.grp[[feat.ind]] else NULL
+    fset_ind <- strsplit(combined,paste(grp_suff,collapse="|"))[[1]][1]
+    feat_ind <- which(grp_suff==strsplit(combined,fset_ind,fixed=TRUE)[[1]][2])
+    feat_suff <- if(length(feat_ind)>0) dat_grp[[feat_ind]] else NULL
 
-    return(list(fset.ind=fset.ind,feat.suff=feat.suff))
+    return(list(fset_ind=fset_ind,feat_suff=feat_suff))
 }
 
-extract.features<-function(allfeats,infeats,ids){
+extract_features<-function(allfeats,infeats,ids){
     allfeats[grepl(paste(infeats,collapse="|"),allfeats,ignore.case = TRUE)&
              grepl(paste(ids,collapse="|"),allfeats,ignore.case = TRUE)]
 }
 
 
 ##the rows of metrics nees to be ranked from most to least desirable
-which_keep <- function(metrics,comm.names,suffs){
-    ind.keep <- c()
-    for(i in comm.names){
+which_keep <- function(metrics,comm_names,suffs){
+    ind_keep <- c()
+    for(i in comm_names){
 
         idx <- which(rownames(metrics)%in%paste0(i,suffs))
-        if (length(idx)>0) ind.keep <- c(ind.keep,idx[1])
+        if (length(idx)>0) ind_keep <- c(ind_keep,idx[1])
     }
 
-    return(rownames(metrics)[sort(ind.keep)])
+    return(rownames(metrics)[sort(ind_keep)])
 }
 
-cv_grid <- function(nkern=500,len=250,lam.b=c(-5,5)){
-        lam1 <- 2^runif(len, lam.b[1], lam.b[2])
+cv_grid <- function(nkern=500,len=250,lam_b=c(-5,5)){
+        lam1 <- 2^runif(len, lam_b[1], lam_b[2])
         ##lam1 <- c(runif(len-2),0,1)
-        lam2 <- 2^runif(len, lam.b[1], lam.b[2])
+        lam2 <- 2^runif(len, lam_b[1], lam_b[2])
 
         nkern <- sample(1:nkern, size = len, replace = TRUE)
         newGrid <- data.frame(lam1=lam1,lam2=lam2,nkern=nkern)
@@ -204,7 +204,7 @@ cv_grid <- function(nkern=500,len=250,lam.b=c(-5,5)){
 
 
 ##pars - a data.frame with columns named lam1, lam2 & nkern giving the parameters to be tried with MKL
-kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type="binary",measure="bacc") {
+kernel_cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type="binary",measure="bacc") {
 
     ############################
     kfolds <- createFolds(if(type=="regression") lbls else factor(lbls),
@@ -264,7 +264,7 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
             } else {
                 ##big metrics are considered good, small metrics are inferior
 
-                metric <- select.metric(preds,lbls[-kfolds[[j]]],type,measure)
+                metric <- select_metric(preds,lbls[-kfolds[[j]]],type,measure)
 
             }
 
@@ -291,26 +291,26 @@ kernel.cv <- function(kerns,lbls,pars=cv_grid(nkern=dim(kerns)[3]),nfolds=5,type
     res <- res[o,]
     pars <- pars[o,]
 
-    pars.id <- round(0.1*nrow(res))
-    return(list(res=res,pars=pars,best.id=pars.id))
+    pars_id <- round(0.1*nrow(res))
+    return(list(res=res,pars=pars,best_id=pars_id))
 }
 
 
 
-is.valid.forest <- function(rf,minl=3) {
+is_valid_forest <- function(rf,minl=3) {
    medianl <- median(sapply(rf$forest$child.nodeIDs, function(x) length(x[[1]])))
    return(medianl>=minl)
 
 }
 
-correct.regression <- function(preds,lbls) {
+correct_regression <- function(preds,lbls) {
 
-      sq.err.f <- function(par) {
+      sq_err_f <- function(par) {
                     sum((lbls- par*preds )^2)
                 }
 
        oo <- tryCatch({
-                    optim(1,sq.err.f,method="L-BFGS-B",lower=0)
+                    optim(1,sq_err_f,method="L-BFGS-B",lower=0)
                 }, error=function(cond) { return(list(par=0,value=Inf)) } )
 
       if(is.infinite(oo$value)) {
@@ -321,13 +321,13 @@ correct.regression <- function(preds,lbls) {
 
 }
 ## the binary/multiclass predictions need to be of type probability (i.e. dim=2)
-select.metric <- function(preds,lbls,ttype,measure="roc") {
+select_metric <- function(preds,lbls,ttype,measure="roc") {
 
     metric <- switch(ttype,
            binary={
 
                ##auroc
-               rocr.pred <- ROCR::prediction(preds[,2],lbls)
+               rocr_pred <- ROCR::prediction(preds[,2],lbls)
 
                confM <- caret::confusionMatrix(
                    factor(apply(preds,1,function(x) colnames(preds)[which.max(x)]),
@@ -335,10 +335,10 @@ select.metric <- function(preds,lbls,ttype,measure="roc") {
 
                msr <- switch(measure,
                              roc={
-                                 ROCR::performance(rocr.pred,"auc")@y.values[[1]]
+                                 ROCR::performance(rocr_pred,"auc")@y.values[[1]]
                                 },
                              pr={
-                                 perf <- ROCR::performance(rocr.pred,"prec","rec")
+                                 perf <- ROCR::performance(rocr_pred,"prec","rec")
                                  perf@y.values[[1]][1] <- 1
                                  pracma::trapz(perf@x.values[[1]],perf@y.values[[1]])
                              },
@@ -402,9 +402,9 @@ select.metric <- function(preds,lbls,ttype,measure="roc") {
 }
 
 
-compose.features <- function(dat,suff="composite",deg=3,topn=ncol(dat),idx=rownames(dat)) {
+compose_features <- function(dat,suff="composite",deg=3,topn=ncol(dat),idx=rownames(dat)) {
 
-     comp.list <- foreach(i=iter(2:deg))%do%{
+     comp_list <- foreach(i=iter(2:deg))%do%{
          combos <- combn(colnames(dat),i)
          out <- apply(combos,2,function(x) Emcdf::emcdf(dat[idx,x,drop=FALSE],dat[idx,x,drop=FALSE]))
          ##out <- apply(combos,2,function(x) copula::C.n(pobs(dat[idx,x,drop=FALSE]),dat[idx,x,drop=FALSE],ties.method="average"))
@@ -414,23 +414,23 @@ compose.features <- function(dat,suff="composite",deg=3,topn=ncol(dat),idx=rowna
          out
      }
 
-     res <- do.call(cbind,comp.list)
+     res <- do.call(cbind,comp_list)
 
-     idx.test <- setdiff(rownames(dat),idx)
+     idx_test <- setdiff(rownames(dat),idx)
      res1 <- NULL
 
-     if(length(idx.test)>0) {
+     if(length(idx_test)>0) {
 
-     comp.list <- foreach(i=iter(2:deg))%do%{
+     comp_list <- foreach(i=iter(2:deg))%do%{
          combos <- combn(colnames(dat),i)
-         out <- apply(combos,2,function(x) Emcdf::emcdf(dat[idx,x,drop=FALSE],dat[idx.test,x,drop=FALSE]))
-         ##out <- apply(combos,2,function(x) copula::C.n(pobs(dat[idx.test,x,drop=FALSE]),dat[idx,x,drop=FALSE],ties.method="average"))
-         rownames(out) <- idx.test
+         out <- apply(combos,2,function(x) Emcdf::emcdf(dat[idx,x,drop=FALSE],dat[idx_test,x,drop=FALSE]))
+         ##out <- apply(combos,2,function(x) copula::C.n(pobs(dat[idx_test,x,drop=FALSE]),dat[idx,x,drop=FALSE],ties.method="average"))
+         rownames(out) <- idx_test
          colnames(out) <- paste0(apply(combos,2,function(x) paste0(x,collapse="_")),
                                     "_",suff)
          out
      }
-     res1 <- do.call(cbind,comp.list)
+     res1 <- do.call(cbind,comp_list)
      }
 
 
@@ -448,9 +448,9 @@ compose.features <- function(dat,suff="composite",deg=3,topn=ncol(dat),idx=rowna
 ## if idx!=rownames(dat) the training set is idx, which is what you use to construct the bins,
 ##the test set is rownames(dat)-idx, which uses the bins constructed on idx to bin data
 
-quantize.data <- function(dat,nbr=5,idx=rownames(dat)) {
+quantize_data <- function(dat,nbr=5,idx=rownames(dat)) {
 
-    idx.test <- setdiff(rownames(dat),idx)
+    idx_test <- setdiff(rownames(dat),idx)
     res <- foreach(i=1:ncol(dat),.combine=cbind)%docomb%{
         breaks <- unique(quantile(dat[idx,i],seq(0,1,1/nbr)))
         breaks[length(breaks)] <- Inf
@@ -460,15 +460,15 @@ quantize.data <- function(dat,nbr=5,idx=rownames(dat)) {
 
     rownames(res) <- idx
 
-    if(length(idx.test)>0){
+    if(length(idx_test)>0){
 
         res1 <- foreach(i=1:ncol(dat),.combine=cbind)%docomb%{
             breaks <- unique(quantile(dat[idx,i],seq(0,1,1/nbr)))
             breaks[length(breaks)] <- Inf
             breaks[1] <- -Inf
-            as.numeric(cut(dat[idx.test,i],breaks=breaks))
+            as.numeric(cut(dat[idx_test,i],breaks=breaks))
         }
-        rownames(res1) <- idx.test
+        rownames(res1) <- idx_test
         res <- rbind(res,res1)
     }
 
@@ -482,42 +482,42 @@ quantize.data <- function(dat,nbr=5,idx=rownames(dat)) {
 
 ##default parameters for RF selected individually for each feature set
 
-rf.pars.default <- function(rf.pars=list()) {
+rf_pars_default <- function(rf_pars=list()) {
 
     ##rf params defaults
-    if(is.null(rf.pars$ntree)) rf.pars$ntree <- 1000
-    if(is.null(rf.pars$min.node.prop)) rf.pars$min.node.prop <- 0.01
-    if(is.null(rf.pars$min.nfeat)) rf.pars$min.nfeat <- 15
-    if(is.null(rf.pars$mtry.prop)) rf.pars$mtry.prop <- 0.25
-    if(is.null(rf.pars$regression.q)) rf.pars$regression.q <- 0.05
-    if(is.null(rf.pars$sample.frac)) rf.pars$sample.frac <- ifelse(rf.pars$replace,1,0.5)
+    if(is.null(rf_pars$ntree)) rf_pars$ntree <- 1000
+    if(is.null(rf_pars$min_node_prop)) rf_pars$min_node_prop <- 0.01
+    if(is.null(rf_pars$min_nfeat)) rf_pars$min_nfeat <- 15
+    if(is.null(rf_pars$mtry_prop)) rf_pars$mtry_prop <- 0.25
+    if(is.null(rf_pars$regression_q)) rf_pars$regression_q <- 0.05
+    if(is.null(rf_pars$sample_frac)) rf_pars$sample_frac <- ifelse(rf_pars$replace,1,0.5)
 
-    rf.pars$replace <- if(is.null(rf.pars$replace)) FALSE else as.logical(match.arg(as.character(rf.pars$replace),c("TRUE","FALSE")))
+    rf_pars$replace <- if(is.null(rf_pars$replace)) FALSE else as.logical(match.arg(as.character(rf_pars$replace),c("TRUE","FALSE")))
 
-    rf.pars$ttype <- if(is.null(rf.pars$ttype)) "binary" else match.arg(rf.pars$ttype,c("binary","regression","multiclass"))
+    rf_pars$ttype <- if(is.null(rf_pars$ttype)) "binary" else match.arg(rf_pars$ttype,c("binary","regression","multiclass"))
 
-    rf.pars$split_rule <- if(is.null(rf.pars$split_rule)) "gini" else match.arg(rf.pars$split_rule,c("gini","hellinger","variance","beta"))
+    rf_pars$split_rule <- if(is.null(rf_pars$split_rule)) "gini" else match.arg(rf_pars$split_rule,c("gini","hellinger","variance","beta"))
 
-    rf.pars$importance <- if(is.null(rf.pars$importance)) "impurity_corrected" else match.arg(rf.pars$importance,c("impurity_corrected","permutation","impurity"))
+    rf_pars$importance <- if(is.null(rf_pars$importance)) "impurity_corrected" else match.arg(rf_pars$importance,c("impurity_corrected","permutation","impurity"))
 
-    rf.pars$metric <- if(is.null(rf.pars$metric)) "roc" else match.arg(rf.pars$metric,c("roc","pr","acc","bacc","mar","rmse","rsq","mae","pearson","spearman"))
+    rf_pars$metric <- if(is.null(rf_pars$metric)) "roc" else match.arg(rf_pars$metric,c("roc","pr","acc","bacc","mar","rmse","rsq","mae","pearson","spearman"))
 
-    rf.pars$unordered.factors <- if(is.null(rf.pars$unrodered.factors)) "order" else match.arg(rf.pars$unordered.factors,c("order","ignore","partition"))
+    rf_pars$unordered_factors <- if(is.null(rf_pars$unordered_factors)) "order" else match.arg(rf_pars$unordered_factors,c("order","ignore","partition"))
 
-    ##paramaters for oob.cv
+    ##paramaters for oob_cv
     ##the list should include ntree as a minimum, since the CV part will be run on forests with fewer trees
     ## for speed of computation
     ## The list should include at least one more parameter, otherwise RR ranking is done with the parameters
-    ## specified above (min.node.prop, min.nfeat,mtry.prop)
-    if (is.null(rf.pars$oob.cv)) rf.pars$oob.cv <- data.frame(min.node.prop=rf.pars$min.node.prop,
-                                                              mtry.prop=rf.pars$mtry.prop,
-                                                              ntree=rf.pars$ntree/2,
+    ## specified above (min_node_prop, min_nfeat,mtry_prop)
+    if (is.null(rf_pars$oob_cv)) rf_pars$oob_cv <- data.frame(min_node_prop=rf_pars$min_node_prop,
+                                                              mtry_prop=rf_pars$mtry_prop,
+                                                              ntree=rf_pars$ntree/2,
                                                               check.names=FALSE,
                                                               stringsAsFactors = FALSE)
 
-    if (!"ntree"%in%colnames(rf.pars$oob.cv)||ncol(rf.pars$oob.cv)<2) stop("Misspecified rf.pars$oob.cv parameters!")
+    if (!"ntree"%in%colnames(rf_pars$oob_cv)||ncol(rf_pars$oob_cv)<2) stop("Misspecified rf_pars$oob_cv parameters!")
 
-    return(rf.pars)
+    return(rf_pars)
 }
 
 aklimate_pars_default<-function(akl_pars=list()) {
@@ -534,63 +534,66 @@ aklimate_pars_default<-function(akl_pars=list()) {
   return(akl_pars)
 
 }
+
+
+
 ##Helper function that trains RF for each feature set
 
 ##lbls -a data.frame of 1 column
 ##dat -a data.frame of predictors
-##rf.pars - list of parameters for RF
-##always.split - vector of variables that will be added to the ones considered for splitting for each tree
+##rf_pars - list of parameters for RF
+##always_split - vector of variables that will be added to the ones considered for splitting for each tree
 ## returns a trained RF model
-rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
+rf_train <- function(dat,lbls,rf_pars,always_split=NULL) {
 
     colnames(lbls) <- c("labels")
 
-    idx.train <- rownames(lbls)
+    idx_train <- rownames(lbls)
 
     ##dat <- mlr::createDummyFeatures(dat)
 
-    dat <- cbind(lbls,dat[idx.train,,drop=FALSE])
-    switch(rf.pars$ttype,
+    dat <- cbind(lbls,dat[idx_train,,drop=FALSE])
+    switch(rf_pars$ttype,
            multiclass=,
            binary={
 
 
-               rf <- ranger::ranger(data=dat[idx.train,,drop=FALSE],
+               rf <- ranger::ranger(data=dat[idx_train,,drop=FALSE],
                             dependent.variable.name="labels",
-                            splitrule = rf.pars$split_rule,
-                            always.split.variables=always.split,
+                            splitrule = rf_pars$split_rule,
+                            always.split.variables=always_split,
                             classification = TRUE,
-                            sample.fraction = rf.pars$sample.frac,
-                            num.trees=rf.pars$ntree,
-                            mtry=ceiling((ncol(dat)-1)*rf.pars$mtry.prop),
-                            min.node.size=ceiling(nrow(dat)*rf.pars$min.node.prop),
-                            class.weights = rf.pars$class.weights,
+                            sample.fraction = rf_pars$sample_frac,
+                            num.trees=rf_pars$ntree,
+                            mtry=ceiling((ncol(dat)-1)*rf_pars$mtry_prop),
+                            min.node.size=ceiling(nrow(dat)*rf_pars$min_node_prop),
+                            class.weights = rf_pars$class_weights,
                             num.threads=1,
                             probability=TRUE,
-                            respect.unordered.factors = rf.pars$unordered.factors,
-                            importance=rf.pars$importance,
+                            respect.unordered.factors = rf_pars$unordered_factors,
+                            importance=rf_pars$importance,
                             write.forest=TRUE,
                             keep.inbag=TRUE,
-                            replace=rf.pars$replace)
+                            replace=rf_pars$replace)
 
            },
            regression={
 
 
-               rf <- ranger::ranger(data=dat[idx.train,,drop=FALSE],
+               rf <- ranger::ranger(data=dat[idx_train,,drop=FALSE],
                             dependent.variable.name="labels",
-                            splitrule = rf.pars$split_rule,
-                            always.split.variables=always.split,
-                            sample.fraction = rf.pars$sample.frac,
-                            num.trees=rf.pars$ntree,
-                            mtry=ceiling((ncol(dat)-1)*rf.pars$mtry.prop),
-                            min.node.size=ceiling(nrow(dat)*rf.pars$min.node.prop),
+                            splitrule = rf_pars$split_rule,
+                            always.split.variables=always_split,
+                            sample.fraction = rf_pars$sample_frac,
+                            num.trees=rf_pars$ntree,
+                            mtry=ceiling((ncol(dat)-1)*rf_pars$mtry_prop),
+                            min.node.size=ceiling(nrow(dat)*rf_pars$min_node_prop),
                             num.threads=1,
-                            importance=rf.pars$importance,
+                            importance=rf_pars$importance,
                             write.forest=TRUE,
-                            respect.unordered.factors = rf.pars$unordered.factors,
+                            respect.unordered.factors = rf_pars$unordered_factors,
                             keep.inbag=TRUE,
-                            replace=rf.pars$replace)
+                            replace=rf_pars$replace)
            },
            error("Trying a method that is not implemented yet!"))
 
@@ -600,20 +603,20 @@ rf.train <- function(dat,lbls,rf.pars,always.split=NULL) {
 
 ##Helper function for selection of most relevant RFs from all RFs trained
 ##dat - a samples x featres df with all features together
-## dat.grp - list of vectors, each vector containing a group of data type suffixes to be considered together
+## dat_grp - list of vectors, each vector containing a group of data type suffixes to be considered together
 ##fsets - a list of feature sets
 ##lbls -a df of one column - a factor - for classification and  muti-class analysis
 ## (status column should be 0-1 with 1's corresponding to deaths)
-##always.add - vector of dat columns that should be added to each fset before RF trainins
+##always_add - vector of dat columns that should be added to each fset before RF trainins
 
 ## returns a ranking feature sets based on RF out-of-bag prediction performance on trainin set
-train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.default(list()),always.add=NULL,sep="_",verbose=FALSE){
+train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_default(list()),always_add=NULL,sep="_",verbose=FALSE){
 
-    rf.pars.global <- rf.pars.default(rf.pars.global)
+    rf_pars_global <- rf_pars_default(rf_pars_global)
 
-        idx.train <- rownames(lbls)
+        idx_train <- rownames(lbls)
 
-    grp.suff <- create.grp.suff(dat.grp,intron=sep)
+    grp_suff <- create_grp_suff(dat_grp,intron=sep)
     ##train models
 
 
@@ -622,23 +625,23 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
         print("Starting feature set forests")
     }
 
-    zz <- foreach(k=1:nrow(rf.pars.global$oob.cv))%do%{
+    zz <- foreach(k=1:nrow(rf_pars_global$oob_cv))%do%{
 
-        rf.pars.local <- rf.pars.global
-        rf.pars.local[colnames(rf.pars.global$oob.cv)] <- rf.pars.global$oob.cv[k,]
+        rf_pars_local <- rf_pars_global
+        rf_pars_local[colnames(rf_pars_global$oob_cv)] <- rf_pars_global$oob_cv[k,]
 
-        vv <- foreach(j=iter(dat.grp)) %do% {
+        vv <- foreach(j=iter(dat_grp)) %do% {
             tt <- foreach(i=iter(fsets)) %docomb% {
 
-                feats<-extract.features(colnames(dat),i,j)
+                feats<-extract_features(colnames(dat),i,j)
 
-                if(length(feats)<rf.pars.global$min.nfeat) return(NULL)
+                if(length(feats)<rf_pars_global$min_nfeat) return(NULL)
 
-                curr.dat <- dat[idx.train,unique(c(feats,always.add)),drop=FALSE]
+                curr_dat <- dat[idx_train,unique(c(feats,always_add)),drop=FALSE]
 
-                rf <- rf.train(curr.dat,
+                rf <- rf_train(curr_dat,
                                lbls,
-                               rf.pars.local,
+                               rf_pars_local,
                                NULL)
 
                 imps <- importance(rf)
@@ -647,8 +650,8 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
                 imps <- imps
 
 
-                if(!is.valid.forest(rf,3)) return(list(metric=NA,imps=NA,preds=NA))
-                metric <- select.metric(rf$predictions,lbls[,1],rf.pars.global$ttype,rf.pars.global$metric)
+                if(!is_valid_forest(rf,3)) return(list(metric=NA,imps=NA,preds=NA))
+                metric <- select_metric(rf$predictions,lbls[,1],rf_pars_global$ttype,rf_pars_global$metric)
 
 
                 ############
@@ -665,19 +668,19 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
             names(tt) <- paste0(names(fsets),paste0(sep,paste(j,collapse=sep)))
             tt <- tt[!sapply(tt,is.null)]
 
-            mms.in <- sapply(tt,function(x) x$metric)
+            mms_in <- sapply(tt,function(x) x$metric)
 
-            imps.in <- lapply(tt,function(x) x$imps)
+            imps_in <- lapply(tt,function(x) x$imps)
 
-            preds.in <- lapply(tt,function(x) x$preds)
-            list(mms.in=mms.in,imps.in=imps.in,preds.in=preds.in)
+            preds_in <- lapply(tt,function(x) x$preds)
+            list(mms_in=mms_in,imps_in=imps_in,preds_in=preds_in)
         }
 
-        mms <- unlist(lapply(vv,function(x) x$mms.in))
+        mms <- unlist(lapply(vv,function(x) x$mms_in))
 
-        imps <- do.call(c,lapply(vv, function(x) x$imps.in))
+        imps <- do.call(c,lapply(vv, function(x) x$imps_in))
 
-        preds <- do.call(c,lapply(vv, function(x) x$preds.in))
+        preds <- do.call(c,lapply(vv, function(x) x$preds_in))
         list(mms=mms,imps=imps,preds=preds)
     }
 
@@ -715,7 +718,7 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
 
     pars <- data.frame(t(sapply(rankmax,
                                 function(x) {
-                                    unlist(rf.pars.global$oob.cv[x,colnames(rf.pars.global$oob.cv),drop=FALSE])
+                                    unlist(rf_pars_global$oob_cv[x,colnames(rf_pars_global$oob_cv),drop=FALSE])
                                 })))
 
     pars <- pars[,setdiff(colnames(pars),"ntree"),drop=FALSE]
@@ -745,9 +748,9 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
 
 
     ##############################
-    if(length(dat.grp)>1){
+    if(length(dat_grp)>1){
         ##keep only highest scoring RF corresponding to a given feature set
-        kept <- which_keep(metrics,names(fsets),grp.suff)
+        kept <- which_keep(metrics,names(fsets),grp_suff)
         metrics <- metrics[kept,,drop=FALSE]
         msums <- msums[kept]
         pars <- pars[kept,,drop=FALSE]
@@ -760,53 +763,53 @@ train.forest.stats <- function(dat,dat.grp,fsets,lbls,rf.pars.global=rf.pars.def
     preds <- t(sapply(preds,function(x) x))
 
     ##needs to be extended for regression (refactored into a separate function)
-    if(rf.pars.global$ttype=="regression"){
-        preds.match <- t(apply(preds,1,function(x) x-lbls[idx.train,1]))
-        preds.match <- apply(abs(preds.match),2,function(x) x<quantile(x,rf.pars.global$regression.q))
+    if(rf_pars_global$ttype=="regression"){
+        preds_match <- t(apply(preds,1,function(x) x-lbls[idx_train,1]))
+        preds_match <- apply(abs(preds_match),2,function(x) x<quantile(x,rf_pars_global$regression_q))
 
     } else {
-        preds.match <- t(apply(preds,1,function(x) x==levels(lbls[idx.train,1])[lbls[idx.train,1]]))
+        preds_match <- t(apply(preds,1,function(x) x==levels(lbls[idx_train,1])[lbls[idx_train,1]]))
     }
-    return(list(pars.global=rf.pars.global,pars.local=pars,res=zz,stats=metrics,msums=msums,rankmax=rankmax,importance=imps,predictions=preds,predictions.match=preds.match))
+    return(list(pars_global=rf_pars_global,pars_local=pars,res=zz,stats=metrics,msums=msums,rankmax=rankmax,importance=imps,predictions=preds,predictions_match=preds_match))
 }
 
 
 
 ##lbls - a data.frame of 1 or 2 columns
-##rf.pars.local - the individual parameters for each forest (determined by oob error)- a df with colnames corresponding to parameters in rf.pars.default - rows correspond to each forest
-train.forest.kernels <- function(dat,dat.grp,fsets,lbls,rf.pars.local,rf.pars.global=rf.pars.default(list()),always.add=NULL,sep="_",verbose=FALSE) {
+##rf_pars_local - the individual parameters for each forest (determined by oob error)- a df with colnames corresponding to parameters in rf_pars_default - rows correspond to each forest
+train_forest_kernels <- function(dat,dat_grp,fsets,lbls,rf_pars_local,rf_pars_global=rf_pars_default(list()),always_add=NULL,sep="_",verbose=FALSE) {
 
-    idx.train <- rownames(lbls)
+    idx_train <- rownames(lbls)
 
     if(verbose) {
         print(date())
         print("Started training forest")
     }
 
-    ii <- if(is.null(rf.pars.local)) names(fsets) else rownames(rf.pars.local)
+    ii <- if(is.null(rf_pars_local)) names(fsets) else rownames(rf_pars_local)
 
-    rf.out <- foreach(i=iter(ii),.options.multicore=list(preschedule=TRUE))%docomb%{
+    rf_out <- foreach(i=iter(ii),.options.multicore=list(preschedule=TRUE))%docomb%{
 
-        ##fset.ind is the name of the set
-        ##feat.suff is a vector of suffices that denominate data types
-        expand(split.set.suff(i,dat.grp),nms=c("fset.ind","feat.suff"))
+        ##fset_ind is the name of the set
+        ##feat_suff is a vector of suffices that denominate data types
+        SPICER::expand(split_set_suff(i,dat_grp),nms=c("fset_ind","feat_suff"))
 
-        feats<-extract.features(colnames(dat),fsets[[fset.ind]],feat.suff)
+        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff)
 
-        ##feats <- colnames(dat)[colnames(dat)%in%expand.names(fsets[[fset.ind]],feat.suff,sep)]
+        ##feats <- colnames(dat)[colnames(dat)%in%expand_names(fsets[[fset_ind]],feat_suff,sep)]
 
-        curr.dat <- dat[idx.train,unique(c(feats,always.add)),drop=FALSE]
+        curr_dat <- dat[idx_train,unique(c(feats,always_add)),drop=FALSE]
 
-        if (!is.null(rf.pars.local)) rf.pars.global[colnames(rf.pars.local)] <- rf.pars.local[i,]
-        rf <- rf.train(curr.dat,
+        if (!is.null(rf_pars_local)) rf_pars_global[colnames(rf_pars_local)] <- rf_pars_local[i,]
+        rf <- rf_train(curr_dat,
                        lbls,
-                       rf.pars.global,
+                       rf_pars_global,
                        NULL)
 
         return(rf)
 
     }
-    names(rf.out) <- ii
+    names(rf_out) <- ii
 
     ##gc()
     if(verbose) {
@@ -814,64 +817,64 @@ train.forest.kernels <- function(dat,dat.grp,fsets,lbls,rf.pars.local,rf.pars.gl
         print("Finished training forests")
     }
 
-    return(rf.out)
+    return(rf_out)
 }
 
 #####
-##dat - same input as aklimate; by default idx.train are presumed to be all indices in rows of dat - if some of those are idx.test, specify accordingly
+##dat - same input as aklimate; by default idx_train are presumed to be all indices in rows of dat - if some of those are idx_test, specify accordingly
 ##dat rownames (samples) should be ordered accordingly
 
-forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.train=rownames(dat),sep="_",verbose=FALSE){
+forest_to_kernel <- function(rf_models,dat,dat_grp,fsets,always_add=NULL,idx_train=rownames(dat),sep="_",verbose=FALSE){
 
-    ##check all idx.train indices are in the data provided
-    stopifnot(length(idx.train)==length(intersect(rownames(dat),idx.train)))
+    ##check all idx_train indices are in the data provided
+    stopifnot(length(idx_train)==length(intersect(rownames(dat),idx_train)))
 
 
-    idx.test <- setdiff(rownames(dat),idx.train)
-    ##if no idx.test , then we ar econstructing trianing kernels
-    if (length(idx.test)==0) idx.test <- idx.train
+    idx_test <- setdiff(rownames(dat),idx_train)
+    ##if no idx_test , then we ar econstructing trianing kernels
+    if (length(idx_test)==0) idx_test <- idx_train
 
     if(verbose) {
         print(date())
         print("Started kernel construction")
     }
 
-    medianl <- sapply(1:length(rf.models),function(x) median(sapply(rf.models[[x]]$forest$child.nodeIDs, function(x) length(x[[1]]))))
-    names(medianl) <- names(rf.models)
+    medianl <- sapply(1:length(rf_models),function(x) median(sapply(rf_models[[x]]$forest$child.nodeIDs, function(x) length(x[[1]]))))
+    names(medianl) <- names(rf_models)
 
 
-    kerns <- foreach(i=iter(names(rf.models)),.options.multicore=list(preschedule=FALSE))%docomb%{
+    kerns <- foreach(i=iter(names(rf_models)),.options.multicore=list(preschedule=FALSE))%docomb%{
 
         simn<-10
-        if(match(i,names(rf.models))<2*simn){
-            Sys.sleep(10*floor(match(i,names(rf.models))/simn))
+        if(match(i,names(rf_models))<2*simn){
+            Sys.sleep(10*floor(match(i,names(rf_models))/simn))
         }
 
 
-        SPICER::expand(split.set.suff(i,dat.grp),nms=c("fset.ind","feat.suff"))
+        SPICER::expand(split_set_suff(i,dat_grp),nms=c("fset_ind","feat_suff"))
 
-        feats<-extract.features(colnames(dat),fsets[[fset.ind]],feat.suff)
+        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff)
 
 
-        curr.dat <- dat[,unique(c(feats,always.add)),drop=FALSE]
-        ##curr.dat <- mlr::createDummyFeatures(curr.dat)
+        curr_dat <- dat[,unique(c(feats,always_add)),drop=FALSE]
+        ##curr_dat <- mlr::createDummyFeatures(curr_dat)
 
         q <- 1
         p <- 2
 
         if(medianl[i]>1){
 
-            preds <- predict(rf.models[[i]],
-                             curr.dat,
+            preds <- predict(rf_models[[i]],
+                             curr_dat,
                              predict.all = TRUE)$predictions
 
-            rownames(preds) <- rownames(curr.dat)
+            rownames(preds) <- rownames(curr_dat)
 
             multic<-length(dim(preds))>2 && dim(preds)[2]>2
 
             if(multic){
-                extensions<-rf.models[[i]]$multic.rel
-                counter<-which(rf.models[[i]]$forest$levels%in%rf.models[[i]]$multic.rel)
+                extensions<-rf_models[[i]]$multic_rel
+                counter<-which(rf_models[[i]]$forest$levels%in%rf_models[[i]]$multic_rel)
             } else {
                 extensions<-"combined"
             }
@@ -883,24 +886,24 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
             knames<-gsub(paste0(sep,"combined$"),"",knames)
 
 
-            proximity<-replicate(length(extensions),matrix(1,length(idx.train),length(idx.test)))
+            proximity<-replicate(length(extensions),matrix(1,length(idx_train),length(idx_test)))
 
-            dimnames(proximity)[[1]] <- idx.train
-            dimnames(proximity)[[2]] <- idx.test
+            dimnames(proximity)[[1]] <- idx_train
+            dimnames(proximity)[[2]] <- idx_test
             dimnames(proximity)[[3]] <- knames
 
             if(multic && length(counter)>0) {
                 for(j in 1:length(counter)){
 
-                    pA <- Similarity::distance(preds[idx.train,counter[j],],
-                                               preds[idx.test,counter[j],],
+                    pA <- Similarity::distance(preds[idx_train,counter[j],],
+                                               preds[idx_test,counter[j],],
                                                method="euclidian",p=p)
 
-                    if(identical(idx.train,idx.test)){
+                    if(identical(idx_train,idx_test)){
                         sA <- quantile(pA,probs=q)
                     } else {
-                        sA <- quantile(Similarity::distance(preds[idx.train,counter[j],],
-                                                            preds[idx.train,counter[j],],
+                        sA <- quantile(Similarity::distance(preds[idx_train,counter[j],],
+                                                            preds[idx_train,counter[j],],
                                                             method="euclidian",p=p),
                                        probs=q)
                     }
@@ -935,15 +938,15 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
                 }
                 ##no need for else since preds have right format in regression case
 
-             prox <- Similarity::distance(preds[idx.train,],
-                               preds[idx.test,],
+             prox <- Similarity::distance(preds[idx_train,],
+                               preds[idx_test,],
                                method="euclidian",p=p)
 
-             if(identical(idx.train,idx.test)){
+             if(identical(idx_train,idx_test)){
                  sigma <- quantile(prox,probs=q)
              } else {
-                 sigma <- quantile(Similarity::distance(preds[idx.train,],
-                                            preds[idx.train,],
+                 sigma <- quantile(Similarity::distance(preds[idx_train,],
+                                            preds[idx_train,],
                                             method="euclidian",p=p),probs=q)
              }
 
@@ -951,19 +954,19 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
 
 
              ###############################
-             preds1 <- predict(rf.models[[i]],
-                               curr.dat,
+             preds1 <- predict(rf_models[[i]],
+                               curr_dat,
                                type="terminalNodes")$predictions
 
-             rownames(preds1) <- rownames(curr.dat)
+             rownames(preds1) <- rownames(curr_dat)
 
-             prox <- Similarity::distance(preds1[idx.train,],preds1[idx.test,],method="euclidian",p=p)
+             prox <- Similarity::distance(preds1[idx_train,],preds1[idx_test,],method="euclidian",p=p)
 
-             if(identical(idx.train,idx.test)){
+             if(identical(idx_train,idx_test)){
                  sigma <- quantile(prox,probs=q)
              } else {
-                 sigma <- quantile(Similarity::distance(preds1[idx.train,],
-                                  preds1[idx.train,],
+                 sigma <- quantile(Similarity::distance(preds1[idx_train,],
+                                  preds1[idx_train,],
                                   method="euclidian",p=p),probs=q)
 
              }
@@ -972,9 +975,9 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
 
              #####################################################
 
-             prox <- Similarity::proximityMatrixRanger(curr.dat[idx.train,],
-                                         curr.dat[idx.test,],
-                                          rf.models[[i]])
+             prox <- Similarity::proximityMatrixRanger(curr_dat[idx_train,],
+                                         curr_dat[idx_test,],
+                                          rf_models[[i]])
 
              proximity[,,1]<-proximity[,,1]*prox
              proximity[,,1]<-proximity[,,1]^(1/3)
@@ -994,7 +997,7 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
         }
 
 
-        rm(curr.dat,preds,preds1,prox)
+        rm(curr_dat,preds,preds1,prox)
         ##gc()
         proximity
     }
@@ -1006,67 +1009,67 @@ forest.to.kernel <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.tra
         print("Finished kernel construction")
     }
 
-    rm(rf.models)
+    rm(rf_models)
 
     return(kerns)
 }
 
-forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx.train=rownames(dat),sep="_",verbose=FALSE){
+forest_to_kernel_oob <- function(rf_models,dat,dat_grp,fsets,always_add=NULL,idx_train=rownames(dat),sep="_",verbose=FALSE){
 
-    ##check all idx.train indices are in the data provided
-    stopifnot(length(idx.train)==length(intersect(rownames(dat),idx.train)))
+    ##check all idx_train indices are in the data provided
+    stopifnot(length(idx_train)==length(intersect(rownames(dat),idx_train)))
 
 
-    idx.test <- setdiff(rownames(dat),idx.train)
-    ##if no idx.test , then we ar econstructing trianing kernels
-    if (length(idx.test)==0) idx.test <- idx.train
+    idx_test <- setdiff(rownames(dat),idx_train)
+    ##if no idx_test , then we ar econstructing trianing kernels
+    if (length(idx_test)==0) idx_test <- idx_train
 
     if(verbose) {
         print(date())
         print("Started kernel construction")
     }
 
-    medianl <- sapply(1:length(rf.models),function(x) median(sapply(rf.models[[x]]$forest$child.nodeIDs, function(x) length(x[[1]]))))
-    names(medianl) <- names(rf.models)
+    medianl <- sapply(1:length(rf_models),function(x) median(sapply(rf_models[[x]]$forest$child.nodeIDs, function(x) length(x[[1]]))))
+    names(medianl) <- names(rf_models)
 
-    kerns <- foreach(i=iter(names(rf.models)),.options.multicore=list(preschedule=FALSE))%docomb%{
+    kerns <- foreach(i=iter(names(rf_models)),.options.multicore=list(preschedule=FALSE))%docomb%{
 
         simn<-10
-        if(match(i,names(rf.models))<2*simn){
-            Sys.sleep(10*floor(match(i,names(rf.models))/simn))
+        if(match(i,names(rf_models))<2*simn){
+            Sys.sleep(10*floor(match(i,names(rf_models))/simn))
         }
 
 
-        expand(split.set.suff(i,dat.grp),nms=c("fset.ind","feat.suff"))
+        SPICER::expand(split_set_suff(i,dat_grp),nms=c("fset_ind","feat_suff"))
 
-        feats<-extract.features(colnames(dat),fsets[[fset.ind]],feat.suff)
+        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff)
 
-        curr.dat <- dat[,unique(c(feats,always.add)),drop=FALSE]
-        ##curr.dat <- mlr::createDummyFeatures(curr.dat)
+        curr_dat <- dat[,unique(c(feats,always_add)),drop=FALSE]
+        ##curr_dat <- mlr::createDummyFeatures(curr_dat)
 
         q <- 1
         p <- 2
 
         if(medianl[i]>1){
 
-            mask <- rf.models[[i]]$inbag.counts
+            mask <- rf_models[[i]]$inbag.counts
             mask <- t(matrix(unlist(mask),ncol=length(mask[[1]]),byrow=TRUE))
             mask <- mask!=0
 
 
-            preds <- predict(rf.models[[i]],
-                             curr.dat,
+            preds <- predict(rf_models[[i]],
+                             curr_dat,
                              predict.all = TRUE)$predictions
 
-            rownames(preds) <- rownames(curr.dat)
+            rownames(preds) <- rownames(curr_dat)
 
 
 
             multic<-length(dim(preds))>2 && dim(preds)[2]>2
 
             if(multic){
-                extensions<-rf.models[[i]]$multic.rel
-                counter<-which(rf.models[[i]]$forest$levels%in%rf.models[[i]]$multic.rel)
+                extensions<-rf_models[[i]]$multic_rel
+                counter<-which(rf_models[[i]]$forest$levels%in%rf_models[[i]]$multic_rel)
             } else {
                 extensions<-"combined"
             }
@@ -1076,10 +1079,10 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
             ##this way non-multicalss weight names are not plastered with "_combined at end
             knames<-gsub(paste0(sep,"combined$"),"",knames)
 
-            proximity<-replicate(length(extensions),matrix(1,length(idx.train),length(idx.test)))
+            proximity<-replicate(length(extensions),matrix(1,length(idx_train),length(idx_test)))
 
-            dimnames(proximity)[[1]] <- idx.train
-            dimnames(proximity)[[2]] <- idx.test
+            dimnames(proximity)[[1]] <- idx_train
+            dimnames(proximity)[[2]] <- idx_test
             dimnames(proximity)[[3]] <- knames
 
             if(multic && length(counter)>0) {
@@ -1090,17 +1093,17 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 
                     pl<-as.data.frame(t(pl))
 
-                    pA<-get_cross_table(pl[,idx.train],
-                                             pl[,idx.test],
-                                             sample.sim.vect.eucl)
+                    pA<-get_cross_table(pl[,idx_train],
+                                             pl[,idx_test],
+                                             sample_sim_vect_eucl)
 
-                    if(identical(idx.train,idx.test)){
+                    if(identical(idx_train,idx_test)){
                         sA <- quantile(pA,probs=q)
                     } else {
 
-                        sA<-quantile(get_cross_table(pl[,idx.train],
-                                                 pl[,idx.train],
-                                                 sample.sim.vect.eucl),
+                        sA<-quantile(get_cross_table(pl[,idx_train],
+                                                 pl[,idx_train],
+                                                 sample_sim_vect_eucl),
                                      probs=q)
                     }
 
@@ -1135,10 +1138,10 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
                     ##will have to concatenate them
                         preds <- t(apply(preds,1,c))
                     ##need to replicate mask matrix to match
-                        mask.extend <- matrix(data=apply(mask,2,rep,rps),
+                        mask_extend <- matrix(data=apply(mask,2,rep,rps),
                                    ncol=ncol(mask)*rps)
 
-                        preds[mask.extend]<-NA
+                        preds[mask_extend]<-NA
                     }
                 } else {
 
@@ -1148,16 +1151,16 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 
                 preds<-as.data.frame(t(preds))
 
-                prox<-get_cross_table(preds[,idx.train],
-                                         preds[,idx.test],
-                                         sample.sim.vect.eucl)
+                prox<-get_cross_table(preds[,idx_train],
+                                         preds[,idx_test],
+                                         sample_sim_vect_eucl)
 
-             if(identical(idx.train,idx.test)){
+             if(identical(idx_train,idx_test)){
                  sigma <- quantile(prox,probs=q)
              } else {
-                 sigma<-quantile(get_cross_table(preds[,idx.train],
-                                          preds[,idx.train],
-                                          sample.sim.vect.eucl),
+                 sigma<-quantile(get_cross_table(preds[,idx_train],
+                                          preds[,idx_train],
+                                          sample_sim_vect_eucl),
                                  probs=q)
              }
 
@@ -1166,28 +1169,28 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 
 
              ###############################
-             preds1 <- predict(rf.models[[i]],
-                               curr.dat,
+             preds1 <- predict(rf_models[[i]],
+                               curr_dat,
                                type="terminalNodes")$predictions
 
-             rownames(preds1) <- rownames(curr.dat)
+             rownames(preds1) <- rownames(curr_dat)
 
 
                 preds1[mask] <- NA
 
                 preds1<-as.data.frame(t(preds1))
 
-                prox<-get_cross_table(preds1[,idx.train],
-                                           preds1[,idx.test],
-                                           sample.sim.vect.eucl)
+                prox<-get_cross_table(preds1[,idx_train],
+                                           preds1[,idx_test],
+                                           sample_sim_vect_eucl)
 
 
-             if(identical(idx.train,idx.test)){
+             if(identical(idx_train,idx_test)){
                  sigma <- quantile(prox,probs=q)
              } else {
-                 sigma<-quantile(get_cross_table(preds1[,idx.train],
-                                                      preds1[,idx.train],
-                                                      sample.sim.vect.eucl),
+                 sigma<-quantile(get_cross_table(preds1[,idx_train],
+                                                      preds1[,idx_train],
+                                                      sample_sim_vect_eucl),
                                  probs=q)
 
              }
@@ -1198,18 +1201,18 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
              #####################################################
 
 
-             preds1 <- predict(rf.models[[i]],
-                               curr.dat,
+             preds1 <- predict(rf_models[[i]],
+                               curr_dat,
                                type="terminalNodes")$predictions
 
-             rownames(preds1) <- rownames(curr.dat)
+             rownames(preds1) <- rownames(curr_dat)
                 preds1[mask] <- NA
 
               preds1 <- as.data.frame(t(preds1))
 
-                prox  <-  get_cross_table(preds1[,idx.train],
-                                               preds1[,idx.test],
-                                               sample.sim.vect)
+                prox  <-  get_cross_table(preds1[,idx_train],
+                                               preds1[,idx_test],
+                                               sample_sim_vect)
 
 
              proximity[,,1]<-proximity[,,1]*prox
@@ -1227,7 +1230,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
         }
 
 
-        rm(curr.dat,preds,preds1,prox,mask)
+        rm(curr_dat,preds,preds1,prox,mask)
         proximity
     }
 
@@ -1238,7 +1241,7 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
         print("Finished kernel construction")
     }
 
-    rm(rf.models)
+    rm(rf_models)
 
     return(kerns)
 }
@@ -1247,10 +1250,10 @@ forest.to.kernel.oob <- function(rf.models,dat,dat.grp,fsets,always.add=NULL,idx
 #' @param akl_obj - an aklimate model
 #' @return A ranked vector of all features with non-zero importance.
 #' @export
-rank.features <- function(akl_obj) {
+rank_features <- function(akl_obj) {
 
-    if(akl_obj$rf.pars.global$ttype=="multiclass"){
-        imps.list <- foreach(k=iter(akl_obj$akl_model))%do%{
+    if(akl_obj$rf_pars_global$ttype=="multiclass"){
+        imps_list <- foreach(k=iter(akl_obj$akl_model))%do%{
                     wghts <- k$sorted_kern_weight
                     imps <- foreach(i=iter(names(wghts)))%do%{
                         ##you need to anchor the patterns at the start of the string
@@ -1258,33 +1261,33 @@ rank.features <- function(akl_obj) {
                         ##other pathway names
                         ##this will become a problem if the matching substring is
                         ##at the beginning of the longer name
-                        ind<-which(stringr::str_detect(i,paste0("^",names(akl_obj$rf.models))))
+                        ind<-which(stringr::str_detect(i,paste0("^",names(akl_obj$rf_models))))
 
-                        res <- sort(ranger:::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
+                        res <- sort(ranger:::importance(akl_obj$rf_models[[ind]]),decreasing=TRUE)
                         res <- res[res>0]
                         res
                     }
                     names(imps) <- names(wghts)
 
-                    scaled.imps <- lapply(names(wghts), function(x) imps[[x]]*wghts[x]/sum(imps[[x]]))
-                    names(scaled.imps) <- names(wghts)
+                    scaled_imps <- lapply(names(wghts), function(x) imps[[x]]*wghts[x]/sum(imps[[x]]))
+                    names(scaled_imps) <- names(wghts)
 
-                    all.names <- unique(unlist(lapply(scaled.imps,names)))
-                    comb.imps <- rep(0,length(all.names))
-                    names(comb.imps) <- all.names
+                    all_names <- unique(unlist(lapply(scaled_imps,names)))
+                    comb_imps <- rep(0,length(all_names))
+                    names(comb_imps) <- all_names
 
-                    for(i in names(scaled.imps)) {
-                        comb.imps[names(scaled.imps[[i]])] <- comb.imps[names(scaled.imps[[i]])] + scaled.imps[[i]]
+                    for(i in names(scaled_imps)) {
+                        comb_imps[names(scaled_imps[[i]])] <- comb_imps[names(scaled_imps[[i]])] + scaled_imps[[i]]
                     }
-                    comb.imps <- sort(comb.imps,decreasing=TRUE)
+                    comb_imps <- sort(comb_imps,decreasing=TRUE)
         }
 
-        full.names <- unique(names(unlist(imps.list)))
-        out <- rep(0,length(full.names))
-        names(out) <- full.names
+        full_names <- unique(names(unlist(imps_list)))
+        out <- rep(0,length(full_names))
+        names(out) <- full_names
 
-        for(l in 1:length(imps.list)){
-            out[names(imps.list[[l]])] <-  out[names(imps.list[[l]])] + imps.list[[l]]
+        for(l in 1:length(imps_list)){
+            out[names(imps_list[[l]])] <-  out[names(imps_list[[l]])] + imps_list[[l]]
         }
         out <- sort(out,decreasing=TRUE)/sum(out)
 
@@ -1292,24 +1295,24 @@ rank.features <- function(akl_obj) {
     } else {
         wghts <- akl_obj$akl_model$sorted_kern_weight
         imps <- foreach(i=iter(names(wghts)))%do%{
-            ind<-which(stringr::str_detect(i,names(akl_obj$rf.models)))
-            res <- sort(ranger::importance(akl_obj$rf.models[[ind]]),decreasing=TRUE)
+            ind<-which(stringr::str_detect(i,names(akl_obj$rf_models)))
+            res <- sort(ranger::importance(akl_obj$rf_models[[ind]]),decreasing=TRUE)
             res <- res[res>0]
             res
         }
         names(imps) <- names(wghts)
 
-        scaled.imps <- lapply(names(wghts), function(x) imps[[x]]*wghts[x]/sum(imps[[x]]))
-        names(scaled.imps) <- names(wghts)
+        scaled_imps <- lapply(names(wghts), function(x) imps[[x]]*wghts[x]/sum(imps[[x]]))
+        names(scaled_imps) <- names(wghts)
 
-        all.names <- unique(unlist(lapply(scaled.imps,names)))
-        comb.imps <- rep(0,length(all.names))
-        names(comb.imps) <- all.names
+        all_names <- unique(unlist(lapply(scaled_imps,names)))
+        comb_imps <- rep(0,length(all_names))
+        names(comb_imps) <- all_names
 
-        for(i in names(scaled.imps)) {
-            comb.imps[names(scaled.imps[[i]])] <- comb.imps[names(scaled.imps[[i]])] + scaled.imps[[i]]
+        for(i in names(scaled_imps)) {
+            comb_imps[names(scaled_imps[[i]])] <- comb_imps[names(scaled_imps[[i]])] + scaled_imps[[i]]
         }
-        out <- sort(comb.imps,decreasing=TRUE)
+        out <- sort(comb_imps,decreasing=TRUE)
 
 
     }
@@ -1319,10 +1322,10 @@ rank.features <- function(akl_obj) {
 
 ##dat - a data frame samples x features with all data types combined (can have factors)
 ##clean up names of pathways beforehand
-##you should pre-filter set.wghts and feat.wghts to the # you want plotted!!
-##the first entry in should.scale is the one whose column heatmap is used if cluster.col is TRUE
+##you should pre-filter set_wghts and feat_wghts to the # you want plotted!!
+##the first entry in should_scale is the one whose column heatmap is used if cluster_col is TRUE
 ##the last column in lbls is the one that we use to group columns
-plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,fsets=NULL,should.scale=NULL,ordered=1,fsize=6,cluster_rows=TRUE,cluster_cols=TRUE,hsplit=NULL){
+plot_heatmap <- function(feat_wghts,dat_grp,dat,lbls,pdf_title,fset_wghts=NULL,fsets=NULL,should_scale=NULL,idx_ordered=1,fsize=6,cluster_rows=TRUE,cluster_cols=TRUE,hsplit=NULL){
 
 
     library(ComplexHeatmap)
@@ -1332,53 +1335,53 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
     require(RColorBrewer)
 
     ##color pallettes
-    qual_col_pals  <-  brewer.pal.info[brewer.pal.info$category == 'qual',]
-    colors <-  unique(unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))))
+    qual_col_pals  <-  RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
+    colors <-  unique(unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))))
 
 
     cont_pals <- lapply(c("RdYlBu","RdBu","RdYlGn","PuOr","RdGy","PRGn","BrBG"),
-                        function(x) brewer.pal(n = 11,name = x))
+                        function(x) RColorBrewer::brewer.pal(n = 11,name = x))
 
-    seq_col_pals <- lapply(rownames(brewer.pal.info)[brewer.pal.info$category == 'seq'],
-                        function(x) brewer.pal(n = 9,name = x))
+    seq_col_pals <- lapply(rownames(RColorBrewer::brewer.pal.info)[RColorBrewer::brewer.pal.info$category == 'seq'],
+                        function(x) RColorBrewer::brewer.pal(n = 9,name = x))
 
     ##prep data
-    factor.feats <- names(feat.wghts)[sapply(dat[,names(feat.wghts)],is.factor)]
-    dat[,factor.feats] <- apply(dat[,factor.feats,drop=FALSE],2,function(x) as.numeric(addNA(x)))
+    factor_feats <- names(feat_wghts)[sapply(dat[,names(feat_wghts)],is.factor)]
+    dat[,factor_feats] <- apply(dat[,factor_feats,drop=FALSE],2,function(x) as.numeric(addNA(x)))
 
-    include.fsets <- !is.null(fsets) && length(fset.wghts) >1
+    include_fsets <- !is.null(fsets) && length(fset_wghts) >1
 
-    stopifnot(length(intersect(rownames(dat.comb),rownames(lbls)))==nrow(lbls))
+    stopifnot(length(intersect(rownames(dat),rownames(lbls)))==nrow(lbls))
 
     dat <- dat[rownames(lbls),]
     ##annotation labels should be in a sample x annotation labels df
-    oc <- do.call(order,lbls[,ordered,drop=FALSE])
+    oc <- do.call(order,lbls[,idx_ordered,drop=FALSE])
     lbls <- lbls[oc,,drop=FALSE]
     dat <- dat[oc,,drop=FALSE]
 
     ##Data Preprocessing
-    prsd.feats <- t(sapply(names(feat.wghts),function(x) {
-        split.set.suff(x,unique(unlist(dat.grp)))
+    prsd_feats <- t(sapply(names(feat_wghts),function(x) {
+        split_set_suff(x,unique(unlist(dat_grp)))
     }))
 
     if(!is.null(fsets)){
 
-        nfset <- gsub(paste0(paste0("_",sapply(dat.grp,
+        nfset <- gsub(paste0(paste0("_",sapply(dat_grp,
                                                function(x) paste0(x,collapse ="_"))),
                              collapse="|"),
-                      "",names(fset.wghts))
-        names(fset.wghts) <- nfset
+                      "",names(fset_wghts))
+        names(fset_wghts) <- nfset
 
-        fsets.trimmed <- lapply(fsets[names(fset.wghts)],function(x) {
-            rownames(prsd.feats)[prsd.feats[,"fset.ind"]%in%x]
+        fsets_trimmed <- lapply(fsets[names(fset_wghts)],function(x) {
+            rownames(prsd_feats)[prsd_feats[,"fset_ind"]%in%x]
         })
 
 
-    fset.wghts <- fset.wghts[names(fsets.trimmed)]
-    fset.annot <- list.to.matrix.membership(fsets.trimmed)
+    fset_wghts <- fset_wghts[names(fsets_trimmed)]
+    fset_annot <- list.to.matrix.membership(fsets_trimmed)
 
     ##if just showing one feature set, trim features to match it
-    if(length(fsets.trimmed)==1) prsd.feats <- prsd.feats[fsets.trimmed[[1]],,drop=FALSE]
+    if(length(fsets_trimmed)==1) prsd_feats <- prsd_feats[fsets_trimmed[[1]],,drop=FALSE]
 
     }
 
@@ -1386,37 +1389,37 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
 
 
     #######################
-    uniq.dtypes <- unlist(unique(prsd.feats[,"feat.suff"]))
-    uniq.feats <-   unlist(unique(prsd.feats[,"fset.ind"]))
+    uniq_dtypes <- unlist(unique(prsd_feats[,"feat_suff"]))
+    uniq_feats <-   unlist(unique(prsd_feats[,"fset_ind"]))
 
-    if(is.null(should.scale)) should.scale <- setNames(rep(FALSE,length(uniq.dtypes)),
-                                                       uniq.dtypes)
-    num.feats <- table(as.character(prsd.feats[,2]))
-    num.feats <- num.feats[uniq.dtypes]
+    if(is.null(should_scale)) should_scale <- setNames(rep(FALSE,length(uniq_dtypes)),
+                                                       uniq_dtypes)
+    num_feats <- table(as.character(prsd_feats[,2]))
+    num_feats <- num_feats[uniq_dtypes]
 
     ##add pseudocounts for small groups
-    num.feats <- num.feats+4
+    num_feats <- num_feats+4
     ##account for annotations
-    num.feats[1] <- 2*num.feats[1]
+    num_feats[1] <- 2*num_feats[1]
 
-    if(include.fsets) {
+    if(include_fsets) {
         ##this is for the features that did not fall in any of the top pathways
-        empty.annot <- matrix(0,nrow=nrow(prsd.feats)-nrow(fset.annot),ncol=ncol(fset.annot))
-        rownames(empty.annot) <- setdiff(rownames(prsd.feats),rownames(fset.annot))
-        fset.annot <- rbind(fset.annot,empty.annot)
-        o <- order(fset.wghts,decreasing=TRUE)
-        fset.annot <- fset.annot[,names(fset.wghts)[o],drop=FALSE]
+        empty_annot <- matrix(0,nrow=nrow(prsd_feats)-nrow(fset_annot),ncol=ncol(fset_annot))
+        rownames(empty_annot) <- setdiff(rownames(prsd_feats),rownames(fset_annot))
+        fset_annot <- rbind(fset_annot,empty_annot)
+        o <- order(fset_wghts,decreasing=TRUE)
+        fset_annot <- fset_annot[,names(fset_wghts)[o],drop=FALSE]
 
-        fset.annot.col <- sapply(1:ncol(fset.annot),function(x) {
-            out <- rep(0,nrow(fset.annot))
-            out[fset.annot[,x]>0] <- x
+        fset_annot_col <- sapply(1:ncol(fset_annot),function(x) {
+            out <- rep(0,nrow(fset_annot))
+            out[fset_annot[,x]>0] <- x
             out
         })
-        rownames(fset.annot.col) <- rownames(fset.annot)
-        colnames(fset.annot.col) <- colnames(fset.annot)
+        rownames(fset_annot_col) <- rownames(fset_annot)
+        colnames(fset_annot_col) <- colnames(fset_annot)
 
-        fset.annot <- fset.annot.col
-        rm(fset.annot.col)
+        fset_annot <- fset_annot_col
+        rm(fset_annot_col)
     }
 
 
@@ -1427,7 +1430,7 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
     ##color mapping
     cc <- 0
     cc_seq <- 1
-    lbl.col <- list()
+    lbl_col <- list()
 
     for (x in colnames(lbls)){
         if(!is.factor(lbls[,x])) {
@@ -1435,23 +1438,23 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
                     br[1] <- floor(br[1])
                     br[length(br)] <- ceiling(br[length(br)])
 
-                    lbl.col <- c(lbl.col,list(cols=colorRamp2(br,seq_col_pals[[cc_seq]])))
+                    lbl_col <- c(lbl_col,list(cols=circlize::colorRamp2(br,seq_col_pals[[cc_seq]])))
                     cc_seq <- cc_seq+1
 
          } else  {
-            lbl.col <-  c(lbl.col,list(cols=setNames(colors[cc+1:length(levels(lbls[,x]))], levels(lbls[,x]))))
+            lbl_col <-  c(lbl_col,list(cols=setNames(colors[cc+1:length(levels(lbls[,x]))], levels(lbls[,x]))))
              cc <- cc+length(levels(lbls[,x]))
          }
     }
-    names(lbl.col) <- colnames(lbls)
+    names(lbl_col) <- colnames(lbls)
 
 
     ##unit(rep(3,ncol(lbls)),"mm")
     ##since the annotation height is included in the top heatmap height,
     ##best to keep the units relative since this is how we determine the
     ## relative size of viewports on the layout
-    ha.top <- HeatmapAnnotation(df=lbls,
-                                   col=lbl.col,
+    ha_top <- HeatmapAnnotation(df=lbls,
+                                   col=lbl_col,
                                    na_col = "whitesmoke",
                                    show_annotation_name = TRUE,
                                    annotation_name_offset = unit(1,"mm"),
@@ -1460,31 +1463,31 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
                                    height=unit(0.05*ncol(lbls),"npc"),
                                 annotation_height=if(ncol(lbls)<5) unit(rep(0.05,ncol(lbls)),"npc") else unit(rep(0.5/ncol(lbls),ncol(lbls)),"npc"),
                                    show_legend=FALSE)
-    legend.list.top <- lapply(colnames(lbls),function(x) color_mapping_legend(ha.top@anno_list[[x]]@color_mapping,nrow=NULL,ncol=2,plot = FALSE))
+    legend_list_top <- lapply(colnames(lbls),function(x) color_mapping_legend(ha_top@anno_list[[x]]@color_mapping,nrow=NULL,ncol=2,plot = FALSE))
 
-    names(legend.list.top) <- colnames(lbls)
+    names(legend_list_top) <- colnames(lbls)
 
-    legend.list.bottom <- list()
+    legend_list_bottom <- list()
     ############################
 
     ##Plotting and Display
 
-    pdf(pdf.title,paper="a4",
+    pdf(pdf_title,paper="a4",
         width=unit(8,"inches"),
-        height=unit(12*sum(num.feats)/100,"inches"))
+        height=unit(12*sum(num_feats)/100,"inches"))
     grid.newpage()
     main_vp <- viewport(name="main_vp",
-                        layout = grid.layout(nr = length(uniq.dtypes),
+                        layout = grid.layout(nr = length(uniq_dtypes),
                               nc = 1,
-                              height=c(num.feats/sum(num.feats),0.05)))
+                              height=c(num_feats/sum(num_feats),0.05)))
     pushViewport(main_vp)
 
-    if(include.fsets) {
-        col.bplot.annot <- HeatmapAnnotation(fset_weights=column_anno_barplot(fset.wghts[colnames(fset.annot)],
-                                                 baseline=floor(0.7*min(fset.wghts)),
+    if(include_fsets) {
+        col_bplot_annot <- HeatmapAnnotation(fset_weights=column_anno_barplot(fset_wghts[colnames(fset_annot)],
+                                                 baseline=floor(0.7*min(fset_wghts)),
                                              bar_width=0.5,
-                                                ylim=c(floor(0.7*min(fset.wghts)),
-                                                    max(fset.wghts)),
+                                                ylim=c(floor(0.7*min(fset_wghts)),
+                                                    max(fset_wghts)),
                                                  border=FALSE,axis=FALSE,
                                                  axis_side="left",
                                              gp=gpar(fill="#CCCCCC",col="#CCCCCC")),
@@ -1493,36 +1496,36 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
     }
 
 
-    for(i in 1:length(uniq.dtypes)) {
-        ind <- uniq.dtypes[i]
-        curr.feat <- rownames(prsd.feats)[prsd.feats[,2]==ind]
-        names(curr.feat) <- as.character(prsd.feats[prsd.feats[,2]==ind,1])
+    for(i in 1:length(uniq_dtypes)) {
+        ind <- uniq_dtypes[i]
+        curr_feat <- rownames(prsd_feats)[prsd_feats[,2]==ind]
+        names(curr_feat) <- as.character(prsd_feats[prsd_feats[,2]==ind,1])
 
-        if(should.scale[ind]) {
-            dat.curr <- scale(dat[rownames(lbls),curr.feat,drop=FALSE])
+        if(should_scale[ind]) {
+            dat_curr <- scale(dat[rownames(lbls),curr_feat,drop=FALSE])
         } else {
-            dat.curr <- dat[rownames(lbls),curr.feat,drop=FALSE]
+            dat_curr <- dat[rownames(lbls),curr_feat,drop=FALSE]
         }
 
-            dat.curr <- t(dat.curr)
-            rownames(dat.curr) <- names(curr.feat)
+            dat_curr <- t(dat_curr)
+            rownames(dat_curr) <- names(curr_feat)
 
 
         ##annotation_width=unit(2,"cm"),
-            row.bplot.annot <-  HeatmapAnnotation(feat_weights=row_anno_barplot(feat.wghts[curr.feat],
+            row_bplot_annot <-  HeatmapAnnotation(feat_weights=row_anno_barplot(feat_wghts[curr_feat],
                                              baseline=0,
                                              size=unit(min(fsize/4,2),"mm"),
-                                                  ylim=c(0,1.1*max(feat.wghts)),
+                                                  ylim=c(0,1.1*max(feat_wghts)),
                                              border=FALSE,axis=FALSE,axis_side="top",
                                              gp=gpar(fill="#CCCCCC",col="#CCCCCC")),
                                               which="row",
                                               width=unit(0.067,"npc"))
-            row.bplot.annot@anno_list[[1]]@name <- paste0(ind,"_feat_weights")
+            row_bplot_annot@anno_list[[1]]@name <- paste0(ind,"_feat_weights")
             ############
 
         ## if(i==1) {
 
-        ##     chclust <- group_hclust(1-cor(dat.curr,method="spearman"),lbls)
+        ##     chclust <- group_hclust(1-cor(dat_curr,method="spearman"),lbls)
         ## }
 
 
@@ -1530,11 +1533,11 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
                                      ##column_dend_reorder=TRUE,
                                      ##show_column_dend=if(i==1) TRUE else FALSE,
 
-        breaks <- unname(quantile(dat.curr,probs=seq(0,1,0.1)))
+        breaks <- unname(quantile(dat_curr,probs=seq(0,1,0.1)))
         breaks[1] <- floor(breaks[1])
         breaks[length(breaks)] <- ceiling(breaks[length(breaks)])
 
-        hm1 <- Heatmap(dat.curr,
+        hm1 <- Heatmap(dat_curr,
                                      col=colorRamp2(breaks=breaks,rev(cont_pals[[i]])),
                                      name=ind,
                                      clustering_distance_rows = "spearman",
@@ -1558,61 +1561,61 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
                                          gp=list(fontsize=fsize/1.5),
                                          title_position="topleft",
                                          legend_height=unit(0.005,"cm")),
-                                     top_annotation= if(i==1) ha.top else NULL)
+                                     top_annotation= if(i==1) ha_top else NULL)
 
-        legend.list.top <- c(legend.list.top,
+        legend_list_top <- c(legend_list_top,
                              list(color_mapping_legend(hm1@matrix_color_mapping,
                                                        ncol=2,
                                                    legend_direction="horizontal",
                                                    plot = FALSE)))
 
 
-        layer <- hm1+row.bplot.annot
+        layer <- hm1+row_bplot_annot
 
-        if(include.fsets){
+        if(include_fsets){
 
 
             hm2 <- Heatmap(name="fset_membership",
-                            fset.annot[curr.feat,,drop=FALSE],
-                           col=if((max(fset.annot[curr.feat,])-min(fset.annot[curr.feat,]))==0) "whitesmoke" else c("whitesmoke",colors[(length(colors)-ncol(fset.annot)+1):length(colors)]),
+                            fset_annot[curr_feat,,drop=FALSE],
+                           col=if((max(fset_annot[curr_feat,])-min(fset_annot[curr_feat,]))==0) "whitesmoke" else c("whitesmoke",colors[(length(colors)-ncol(fset_annot)+1):length(colors)]),
                             cluster_rows=FALSE,
                             cluster_columns=FALSE,
                             width=1,
-                            top_annotation= if(i==1) col.bplot.annot else NULL,
+                            top_annotation= if(i==1) col_bplot_annot else NULL,
                             show_row_names=FALSE,
                             show_column_names=FALSE,
                             show_heatmap_legend=FALSE,
                             heatmap_legend_param=list(
                                 title="pathway",
-                                at=1:ncol(fset.annot),
+                                at=1:ncol(fset_annot),
                                 color_bar="discrete",
-                                labels=colnames(fset.annot)))
+                                labels=colnames(fset_annot)))
 
             ## hm2@matrix_color_mapping
             ## you need to set the legend colors with the full heatmap set of colors!
             ## if you just extract hm2@matrix_color_mapping from the last dtype,
             ## if not all pathways have members in that dtype, weird things start
             ## happening with the legend colors
-            if (i==length(uniq.dtypes) && include.fsets) legend.list.bottom <- c(legend.list.bottom,
+            if (i==length(uniq_dtypes) && include_fsets) legend_list_bottom <- c(legend_list_bottom,
                          list(color_mapping_legend(ColorMapping(colors=setNames(
-                                                                    colors[(length(colors)-ncol(fset.annot)+1):length(colors)],
-                                                               colnames(fset.annot))),
+                                                                    colors[(length(colors)-ncol(fset_annot)+1):length(colors)],
+                                                               colnames(fset_annot))),
                                                    title="pathway",
-                                                   at=colnames(fset.annot),
+                                                   at=colnames(fset_annot),
                                                    color_bar="discrete",
 
                                                    legend_direction="horizontal",
-                                                   labels=sapply(colnames(fset.annot),function(x) substr(x,1,60)),
+                                                   labels=sapply(colnames(fset_annot),function(x) substr(x,1,60)),
                                                    plot = FALSE)))
 
-                    layer <- hm1 + hm2 + row.bplot.annot
+                    layer <- hm1 + hm2 + row_bplot_annot
         }
 
         ###################################################################
 
-        pushViewport(viewport(layout.pos.row =i, layout.pos.col = 1))
+        pushViewport(viewport(layout.pos.row =i, layout.pos_col = 1))
 
-        .spl <- if(nrow(dat.curr)>10) hsplit else NULL
+        .spl <- if(nrow(dat_curr)>10) hsplit else NULL
         draw(layer,
              split=.spl,
              gap=unit(c(1.25,0.25),units="cm"),
@@ -1620,17 +1623,17 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
 
 
         ##separator lines
-        if(i < length(uniq.dtypes))  grid.lines(x=unit(c(0.05,0.95),"npc"),
+        if(i < length(uniq_dtypes))  grid.lines(x=unit(c(0.05,0.95),"npc"),
                                               y=unit(c(0,0),"npc"),
                                               gp=gpar(lty="dashed",lwd=2))
 
 
 
-        if(include.fsets) {
-            decorate_annotation("fset_weights", { grid.yaxis(at =seq(floor(0.7*min(fset.wghts)),
-                                                             round(1.1*(max(fset.wghts)),digits=2),length.out=5),
-                                                   label = seq(floor(0.7*min(fset.wghts)),
-                                                       round(1.1*(max(fset.wghts)),digits=2),length.out=5),
+        if(include_fsets) {
+            decorate_annotation("fset_weights", { grid.yaxis(at =seq(floor(0.7*min(fset_wghts)),
+                                                             round(1.1*(max(fset_wghts)),digits=2),length.out=5),
+                                                   label = seq(floor(0.7*min(fset_wghts)),
+                                                       round(1.1*(max(fset_wghts)),digits=2),length.out=5),
                                                    main=TRUE,
                                                    gp=gpar(fontsize=fsize,
                                                        lineheight=0.6))
@@ -1644,8 +1647,8 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
         }
 
                     if (i==1) {
-                decorate_annotation(paste0(ind,"_feat_weights_1"), { grid.xaxis(at =seq(0,round(1.33*(max(feat.wghts)),digits=2),length.out=5),
-                                                   label = seq(0,round(1.33*(max(feat.wghts)),digits=2),length.out=5),
+                decorate_annotation(paste0(ind,"_feat_weights_1"), { grid.xaxis(at =seq(0,round(1.33*(max(feat_wghts)),digits=2),length.out=5),
+                                                   label = seq(0,round(1.33*(max(feat_wghts)),digits=2),length.out=5),
                                                    main=FALSE,
                                                    gp=gpar(fontsize=fsize,
                                                        lineheight=0.75))
@@ -1680,15 +1683,15 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
     }
 
         seekViewport("main_vp")
-    ##pushViewport(viewport(layout.pos.row =1, layout.pos.col = 1))
+    ##pushViewport(viewport(layout.pos.row =1, layout.pos_col = 1))
     ##necessary because you cannot plot the list of legends directly
-    if(length(legend.list.top)>5)   {
+    if(length(legend_list_top)>5)   {
 
         draw(Heatmap(matrix(nrow=0,ncol=1),
                                                   show_row_names=FALSE,
                                                   show_column_names=FALSE,
                                                   show_heatmap_legend = FALSE),
-                                          heatmap_legend_list=legend.list.top[1:5],
+                                          heatmap_legend_list=legend_list_top[1:5],
                                           heatmap_legend_side="left",
              newpage=TRUE)
 
@@ -1698,7 +1701,7 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
                                                   show_row_names=FALSE,
                                                   show_column_names=FALSE,
                                                   show_heatmap_legend = FALSE),
-                                          heatmap_legend_list=legend.list.top[6:length(legend.list.top)],
+                                          heatmap_legend_list=legend_list_top[6:length(legend_list_top)],
                                           heatmap_legend_side="left",
              newpage=TRUE)
 
@@ -1708,18 +1711,18 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
                                                   show_row_names=FALSE,
                                                   show_column_names=FALSE,
                                                   show_heatmap_legend = FALSE),
-                                          heatmap_legend_list=legend.list.top,
+                                          heatmap_legend_list=legend_list_top,
                                           heatmap_legend_side="left",
                                           newpage=TRUE)
 
    }
     ##upViewport()
 
-    if(include.fsets) draw(Heatmap(matrix(nrow=0,ncol=1),
+    if(include_fsets) draw(Heatmap(matrix(nrow=0,ncol=1),
                  show_row_names=FALSE,
                  show_column_names=FALSE,
                  show_heatmap_legend = FALSE),
-        heatmap_legend_list=legend.list.bottom,
+        heatmap_legend_list=legend_list_bottom,
        heatmap_legend_side="left",
              newpage=TRUE)
 
@@ -1729,63 +1732,64 @@ plot.heatmap <- function(feat.wghts,dat.grp,dat,lbls,pdf.title,fset.wghts=NULL,f
 ################################
 ##need to fix labels for feature sets so that they appear as numbers in graph and have their separate legend
 
-plot.network <- function(akl_obj,fsets,title,sep="_",topn=c(10,30)) {
+plot_network <- function(akl_obj,fsets,title,sep="_",topn=c(10,30)) {
 
     require(RColorBrewer)
     require(scales)
+    require(igraph)
     qual_col_pals  <-  brewer.pal.info[brewer.pal.info$category == 'qual',]
     colors <-  unique(unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))))
 
-    set.wghts <- akl_obj$akl_model$sorted_kern_weight
-    feat.wghts <- rank.features(akl_obj)
+    set_wghts <- akl_obj$akl_model$sorted_kern_weight
+    feat_wghts <- rank_features(akl_obj)
 
-    set.wghts <- set.wghts[1:min(length(set.wghts),topn[1])]
-    feat.wghts <- feat.wghts[1:min(length(feat.wghts),topn[2])]
+    set_wghts <- set_wghts[1:min(length(set_wghts),topn[1])]
+    feat_wghts <- feat_wghts[1:min(length(feat_wghts),topn[2])]
 
 
-    adj.df <- foreach(i=iter(names(set.wghts)))%docomb%{
-        expand(split.set.suff(i,akl_obj$dat.grp),nms=c("fset.ind","feat.suff"))
-        feats <- akl_obj$rf.models[[i]]$forest$independent.variable.names[akl_obj$rf.models[[i]]$forest$independent.variable.names%in%names(feat.wghts)]
+    adj_df <- foreach(i=iter(names(set_wghts)))%docomb%{
+        SPICER::expand(split_set_suff(i,akl_obj$dat_grp),nms=c("fset_ind","feat_suff"))
+        feats <- akl_obj$rf_models[[i]]$forest$independent.variable.names[akl_obj$rf_models[[i]]$forest$independent.variable.names%in%names(feat_wghts)]
         if(length(feats)>0){
-            return(data.frame(from=toupper(fset.ind),to=toupper(feats),weight=set.wghts[i]*feat.wghts[feats],color="grey",stringsAsFactors = FALSE,check.names=FALSE) )
+            return(data.frame(from=toupper(fset_ind),to=toupper(feats),weight=set_wghts[i]*feat_wghts[feats],color="grey",stringsAsFactors = FALSE,check.names=FALSE) )
         } else {
             return (NULL)
         }
     }
 
-    adj.df <- adj.df[!sapply(adj.df,is.null)]
-    adj.df <- do.call(rbind,adj.df)
+    adj_df <- adj_df[!sapply(adj_df,is.null)]
+    adj_df <- do.call(rbind,adj_df)
 
 
-    nodes.set <- foreach(i=iter(names(set.wghts)),.combine=rbind)%docomb%{
-        expand(split.set.suff(i,akl_obj$dat.grp),nms=c("fset.ind","feat.suff"))
-        data.frame(nodeID=toupper(fset.ind),
-                   nodeID.clean=gsub("genesigdb_|_up$|_down$|_dn$|^go_","",fset.ind,ignore.case = TRUE),
+    nodes_set <- foreach(i=iter(names(set_wghts)),.combine=rbind)%docomb%{
+        SPICER::expand(split_set_suff(i,akl_obj$dat_grp),nms=c("fset_ind","feat_suff"))
+        data.frame(nodeID=toupper(fset_ind),
+                   nodeID_clean=gsub("genesigdb_|_up$|_down$|_dn$|^go_","",fset_ind,ignore.case = TRUE),
                    type=TRUE,
-                   weight=set.wghts[i],
+                   weight=set_wghts[i],
                    color=colors[1],stringsAsFactors = FALSE,check.names=FALSE)
-        ##colors.sets[which(names(set.wghts)%in%i)]
+        ##colors.sets[which(names(set_wghts)%in%i)]
 
     }
 
-    unique.grps <- unique(unlist(akl_obj$dat.grp))
-    colors.feats <- colors[2:(length(unique.grps)+1)]
-    nodes.feat <- foreach(i=iter(names(feat.wghts)),.combine=rbind)%docomb%{
-        expand(split.set.suff(i,unique.grps),nms=c("feat","feat.suff"))
+    unique_grps <- unique(unlist(akl_obj$dat_grp))
+    colors_feats <- colors[2:(length(unique_grps)+1)]
+    nodes_feat <- foreach(i=iter(names(feat_wghts)),.combine=rbind)%docomb%{
+        SPICER::expand(split_set_suff(i,unique_grps),nms=c("feat","feat_suff"))
 
         data.frame(nodeID=toupper(i),
-                   nodeID.clean=feat,
+                   nodeID_clean=feat,
                    type=FALSE,
-                   weight=feat.wghts[i],
-                   color=colors.feats[unique.grps%in%feat.suff],
+                   weight=feat_wghts[i],
+                   color=colors_feats[unique_grps%in%feat_suff],
                    stringsAsFactors = FALSE,check.names=FALSE)
 
     }
 
 
 
-    nodes <- rbind(nodes.set,nodes.feat)
-    ig <- graph_from_data_frame(d=adj.df,vertices=nodes,directed=FALSE)
+    nodes <- rbind(nodes_set,nodes_feat)
+    ig <- graph_from_data_frame(d=adj_df,vertices=nodes,directed=FALSE)
 
     V(ig)$degree <- degree(ig,mode="all")
     ig <- delete_vertices(ig,V(ig)[V(ig)$degree==0])
@@ -1801,17 +1805,17 @@ plot.network <- function(akl_obj,fsets,title,sep="_",topn=c(10,30)) {
     l <- layout.davidson.harel(ig)
     l <- norm_coords(l, ymin=-2, ymax=2, xmin=-2, xmax=2)
 
-    color.sets <- colors[(length(unique.grps)+2):(length(unique.grps)+length(set.wghts)+1)]
+    color_sets <- colors[(length(unique_grps)+2):(length(unique_grps)+length(set_wghts)+1)]
     ##this sets the transparency of the shades to 50%, seems reasonable for now
-    color.sets <- scales::alpha(color.sets,alpha=0.5)
+    color_sets <- scales::alpha(color_sets,alpha=0.5)
         ends <- ends(ig,E(ig))
-    grp.mark <- lapply(unique(ends[,1]),function(x) {
+    grp_mark <- lapply(unique(ends[,1]),function(x) {
         which(names(V(ig))%in%ends[ends[,1]==x,2])
     })
-    names(grp.mark) <- unique(ends[,1])
+    names(grp_mark) <- unique(ends[,1])
 
     pdf(title)
-    plot(ig,mark.groups=grp.mark,mark.color=color.sets,mark.border=NA,layout=l,vertex.label.font=10,vertex.label=V(ig)$nodeID.clean,vertex.label.cex=0.7,vertex.label.dist=1.1,vertex.label.degree=pi/2)
+    plot(ig,mark.groups=grp_mark,mark.color=color_sets,mark.border=NA,layout=l,vertex.label.font=10,vertex.label=V(ig)$nodeID_clean,vertex.label.cex=0.7,vertex.label.dist=1.1,vertex.label.degree=pi/2)
     dev.off()
 }
 

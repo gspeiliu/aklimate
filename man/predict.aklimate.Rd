@@ -5,7 +5,7 @@
 \title{Compute predictions from an aklimate model}
 \usage{
 \method{predict}{aklimate}(akl_obj, dat, fsets, kernels = NULL,
-  store.kernels = FALSE)
+  store_kernels = FALSE)
 }
 \arguments{
 \item{akl_obj}{- an aklimate model}
