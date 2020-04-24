@@ -644,7 +644,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
                                rf_pars_local,
                                NULL)
 
-                imps <- importance(rf)
+                imps <- ranger::importance(rf)
                 imps <- imps[order(imps,decreasing=TRUE)]
                 imps <- imps[imps>0]
                 imps <- imps
@@ -1263,7 +1263,7 @@ rank_features <- function(akl_obj) {
                         ##at the beginning of the longer name
                         ind<-which(stringr::str_detect(i,paste0("^",names(akl_obj$rf_models))))
 
-                        res <- sort(ranger:::importance(akl_obj$rf_models[[ind]]),decreasing=TRUE)
+                        res <- sort(ranger::importance(akl_obj$rf_models[[ind]]),decreasing=TRUE)
                         res <- res[res>0]
                         res
                     }
