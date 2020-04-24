@@ -975,9 +975,16 @@ forest_to_kernel <- function(rf_models,dat,dat_grp,fsets,always_add=NULL,idx_tra
 
              #####################################################
 
-             prox <- Similarity::proximityMatrixRanger(curr_dat[idx_train,],
-                                         curr_dat[idx_test,],
-                                          rf_models[[i]])
+             preds1 <- as.data.frame(t(preds1))
+
+             prox  <-  get_cross_table(preds1[,idx_train],
+                                       preds1[,idx_test],
+                                       sample_sim_vect)
+
+             ##Similarity package ranger interactions seems to be broken now
+             ##prox <- Similarity::proximityMatrixRanger(curr_dat[idx_train,],
+             ##                             curr_dat[idx_test,],
+             ##                             rf_models[[i]])
 
              proximity[,,1]<-proximity[,,1]*prox
              proximity[,,1]<-proximity[,,1]^(1/3)
