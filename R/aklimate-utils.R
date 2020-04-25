@@ -3,7 +3,6 @@
 #' @importFrom foreach %do%
 #' @importFrom foreach %dopar%
 #' @importFrom foreach foreach
-#' @importFrom stats predict
 
 ##reads a file in a listt format,
 ##e.g. Name1 member1 member2 ...
