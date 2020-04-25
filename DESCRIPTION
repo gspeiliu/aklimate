@@ -32,6 +32,7 @@ Imports:
     pracma,
     foreach,
     doParallel,
+    stats,
     ranger (>= 0.12.0),
     SPICER (>= 0.1.0),
     Similarity (>= 0.1.0)
