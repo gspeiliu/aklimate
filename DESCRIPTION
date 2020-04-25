@@ -23,7 +23,7 @@ URL: http://github.com/VladoUzunangelov/aklimate
 BugReports: http://github.com/VladoUzunangelov/aklimate
 Depends: 
     R (>= 3.4.0),
-    ranger (>= 0.12.0)
+    ranger (>= 0.11.1)
 Imports: 
     purrr,
     caret,
