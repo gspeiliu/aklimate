@@ -3,6 +3,8 @@
 #' @importFrom foreach %do%
 #' @importFrom foreach %dopar%
 #' @importFrom foreach foreach
+#' @importFrom iterators iter
+
 
 ##reads a file in a listt format,
 ##e.g. Name1 member1 member2 ...
@@ -73,8 +75,6 @@ sample_sim_vect_eucl <- function(source,target) {
 sample_sim_vect_eucl_mask <- function(source,target,mask) {
     mapply(function(x,y,target) sqrt(sum((x[y]-target[y])^2)),source,mask,MoreArgs = list(target=target))
 }
-
-
 
 #'Relative contribution of data types based on cumulative importance of features
 #' @param suffs - vector of suffixes of participating data types

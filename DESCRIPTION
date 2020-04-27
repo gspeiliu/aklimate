@@ -32,6 +32,7 @@ Imports:
     stringr,
     pracma,
     foreach,
+    iterators,
     doParallel,
     SPICER (>= 0.1.0),
     Similarity (>= 0.1.0)
