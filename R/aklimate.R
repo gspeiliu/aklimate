@@ -109,7 +109,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
         if (akl_pars$subsetCV) {
             if (rf_pars$ttype == "multiclass") {
                 ll <- sapply(rf_models, function(x) length(x$multic_rel))
-                sel <- 1:which(cumsum(ll) > kcv$pars[kcv$best_id, "nkern"])[1]
+                sel <- 1:which(cumsum(ll) >= kcv$pars[kcv$best_id, "nkern"])[1]
             } else {
                 sel <- 1:kcv$pars[kcv$best_id, "nkern"]
             }
