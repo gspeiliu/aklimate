@@ -663,6 +663,8 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
                 } else {
                     rf$predictions
                 }
+
+                if(any(is.na(preds))) return(list(metric=NA,imps=NA,preds=NA))
                 names(preds) <- rownames(lbls)
                 return(list(metric=metric,imps=imps,preds=preds))
 
