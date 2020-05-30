@@ -638,7 +638,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
 
                 feats<-extract_features(colnames(dat),i,j)
 
-                if(length(feats)<rf_pars_global$min_nfeat) return(NULL)
+                if(length(feats)<rf_pars_global$min_nfeat) return(list(metric=NA,imps=NA,preds=NA))
 
                 curr_dat <- dat[idx_train,unique(c(feats,always_add)),drop=FALSE]
 
@@ -665,6 +665,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
                 }
 
                 if(any(is.na(preds))) return(list(metric=NA,imps=NA,preds=NA))
+
                 names(preds) <- rownames(lbls)
                 return(list(metric=metric,imps=imps,preds=preds))
 
