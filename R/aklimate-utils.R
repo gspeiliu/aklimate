@@ -672,7 +672,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
             }
 
             names(tt) <- paste0(names(fsets),paste0(sep,paste(j,collapse=sep)))
-            tt <- tt[!sapply(tt,is.null)]
+            tt <- tt[!sapply(tt,function(x) any(is.na(x)))]
 
             mms_in <- sapply(tt,function(x) x$metric)
 
