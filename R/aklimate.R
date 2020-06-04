@@ -49,11 +49,6 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
 
            },
            multiclass={
-             probs<-rf_out$probabilities
-             probs[rf_out$predictions_match]<-NA
-             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn]])))
-             idx<-c(idx,idx_1)
-             idx<-rownames(probs)[rownames(probs)%in%idx]
 
              ####################
              lvls <- levels(lbls[, 1])
@@ -86,6 +81,15 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              names(krel) <- um
 
              idx <- rownames(rf_out$predictions)[rownames(rf_out$predictions)%in%um]
+
+
+             ##################
+             probs<-rf_out$probabilities
+             probs[rf_out$predictions_match]<-NA
+             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:ceiling(akl_pars$topn/2)]])))
+             idx<-c(idx,idx_1)
+             idx<-rownames(probs)[rownames(probs)%in%idx]
+
            },
            regression={})
 
