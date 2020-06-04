@@ -85,7 +85,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              krel <- lapply(um, function(x) names(mult)[sapply(mult, function(y) x %in% y)])
              names(krel) <- um
 
-             idx <- rownames(rf_out$predictions)[rownames(rf_out$predictions%in%um)]
+             idx <- rownames(rf_out$predictions)[rownames(rf_out$predictions)%in%um]
            },
            regression={})
 
