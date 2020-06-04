@@ -766,7 +766,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
     ranks <- ranks[o,,drop=FALSE]
     imps <- imps[o]
     preds <- preds[o]
-    probs<=probs[o]
+    probs<-probs[o]
 
 
     ##############################
