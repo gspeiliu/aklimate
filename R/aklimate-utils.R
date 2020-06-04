@@ -658,16 +658,22 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
 
 
                 ############
-                preds <- if(length(dim(rf$predictions))==2) {
-                    apply(rf$predictions,1,function(x) levels(lbls$labels)[which.max(x)])
+
+                if(length(dim(rf$predictions))==2) {
+                  ##binary and multiclass
+                    preds<-apply(rf$predictions,1,
+                                 function(x) levels(lbls$labels)[which.max(x)])
+                    probs<-apply(rf$predictions,1,max)
+                    names(probs)<-rownames(lbls)
                 } else {
-                    rf$predictions
+                    preds<-rf$predictions
+                    probs<-NULL
                 }
 
-                if(any(is.na(preds))) return(list(metric=NA,imps=NA,preds=NA))
+                if(all(is.na(preds))) return(list(metric=NA,imps=NA,preds=NA))
 
                 names(preds) <- rownames(lbls)
-                return(list(metric=metric,imps=imps,preds=preds))
+                return(list(metric=metric,imps=imps,preds=preds,probs=probs))
 
             }
 
@@ -679,7 +685,9 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
             imps_in <- lapply(tt,function(x) x$imps)
 
             preds_in <- lapply(tt,function(x) x$preds)
-            list(mms_in=mms_in,imps_in=imps_in,preds_in=preds_in)
+
+            probs_in <- lapply(tt,function(x) x$probs)
+            list(mms_in=mms_in,imps_in=imps_in,preds_in=preds_in,probs_in=probs_in)
         }
 
         mms <- unlist(lapply(vv,function(x) x$mms_in))
@@ -687,7 +695,9 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
         imps <- do.call(c,lapply(vv, function(x) x$imps_in))
 
         preds <- do.call(c,lapply(vv, function(x) x$preds_in))
-        list(mms=mms,imps=imps,preds=preds)
+
+        probs <- do.call(c,lapply(vv, function(x) x$probs_in))
+        list(mms=mms,imps=imps,preds=preds,probs=probs)
     }
 
     if(verbose) {
@@ -739,6 +749,11 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
     })
     names(preds) <- names(rankmax)
 
+    probs <- lapply(1:length(rankmax),function(x) {
+      zz[[rankmax[x]]]$probs[[names(rankmax)[x]]]
+    })
+    names(probs) <- names(rankmax)
+
 
     msums <- rowMeans(ranks,na.rm=TRUE)
 
@@ -751,6 +766,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
     ranks <- ranks[o,,drop=FALSE]
     imps <- imps[o]
     preds <- preds[o]
+    probs<=probs[o]
 
 
     ##############################
@@ -763,6 +779,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
         ranks <- ranks[kept,,drop=FALSE]
         imps <- imps[kept]
         preds <- preds[kept]
+        probs<-probs[kept]
     }
     ##################################
 
@@ -772,11 +789,13 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
     if(rf_pars_global$ttype=="regression"){
         preds_match <- t(apply(preds,1,function(x) x-lbls[idx_train,1]))
         preds_match <- apply(abs(preds_match),2,function(x) x<quantile(x,rf_pars_global$regression_q))
+        probs<-NULL
 
     } else {
         preds_match <- t(apply(preds,1,function(x) x==levels(lbls[idx_train,1])[lbls[idx_train,1]]))
+        probs<-t(sapply(probs,function(x) x))
     }
-    return(list(pars_global=rf_pars_global,pars_local=pars,res=zz,stats=metrics,msums=msums,rankmax=rankmax,importance=imps,predictions=preds,predictions_match=preds_match))
+    return(list(pars_global=rf_pars_global,pars_local=pars,res=zz,stats=metrics,msums=msums,rankmax=rankmax,importance=imps,predictions=preds,probabilities=probs,predictions_match=preds_match))
 }
 
 
