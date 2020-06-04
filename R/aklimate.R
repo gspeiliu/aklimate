@@ -43,7 +43,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
            binary={
              probs<-rf_out$probabilities
              probs[rf_out$predictions_match]<-NA
-             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn])))
+             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn]])))
              idx<-c(idx,idx_1)
              idx<-rownames(probs)[rownames(probs)%in%idx]
 
@@ -51,7 +51,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
            multiclass={
              probs<-rf_out$probabilities
              probs[rf_out$predictions_match]<-NA
-             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn])))
+             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn]])))
              idx<-c(idx,idx_1)
              idx<-rownames(probs)[rownames(probs)%in%idx]
 
