@@ -71,11 +71,10 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
                oopick <- unique(
                  unlist(
                    lapply(
-                     1:length(clvl), function(x) {
-                       unique(c(rownames(probs)[order(probs[, x],decreasing=TRUE)[1:ceiling(akl_pars$topn/2)]],
-                              idx[which(probs[idx, x] > quantile(probs[, x], 0.95,na.rm=TRUE))]))
-
-
+                     1:length(clvl),
+                     function(x) {
+            unique(c(rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn]],
+                     idx[which(probs[idx, x] > quantile(probs[, x], 0.95,na.rm=TRUE))]))
                  })))
              }
              names(mult) <- lvls

@@ -199,6 +199,7 @@ cv_grid <- function(nkern=500,len=250,lam_b=c(-5,5)){
 
         nkern <- sample(1:nkern, size = len, replace = TRUE)
         newGrid <- data.frame(lam1=lam1,lam2=lam2,nkern=nkern)
+        newGrid<-newGrid[order(newGrid$lam1/newGrid$lam2),]
         return(newGrid)
 }
 
