@@ -73,8 +73,8 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
                    lapply(
                      1:length(clvl),
                      function(x) {
-            unique(c(rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn]],
-                     idx[which(probs[idx, x] > quantile(probs[, x], 0.95,na.rm=TRUE))]))
+            unique(c(rownames(probs)[order(probs[, clvl[x]],decreasing=TRUE)[1:akl_pars$topn]],
+                     idx[which(probs[idx, clvl[x]] > quantile(probs[, clvl[x]], 0.95,na.rm=TRUE))]))
                  })))
              }
              names(mult) <- lvls
