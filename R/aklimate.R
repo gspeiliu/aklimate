@@ -52,38 +52,35 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
 
              ####################
              lvls <- levels(lbls[, 1])
-
-             lpm <- foreach(j = 1:nrow(rf_out$predictions), .combine = rbind) %docomb% {
-               confM <- caret::confusionMatrix(factor(rf_out$predictions[j, ], levels = levels(lbls[, 1])),
-                                               lbls[, 1])
-
-               unname(confM$byClass[, "Balanced Accuracy"])
-
-             }
-             rownames(lpm) <- rownames(rf_out$predictions)
+             probs<-rf_out$probabilities
+             probs[rf_out$predictions_match]<-NA
+             # lpm <- foreach(j = 1:nrow(rf_out$predictions), .combine = rbind) %docomb% {
+             #   confM <- caret::confusionMatrix(factor(rf_out$predictions[j, ], levels = levels(lbls[, 1])),
+             #                                   lbls[, 1])
+             #
+             #   unname(confM$byClass[, "Balanced Accuracy"])
+             #
+             # }
+             # rownames(lpm) <- rownames(rf_out$predictions)
 
               #######################################
              mult <- foreach(i = 1:length(lvls)) %do% {
-               oo <- order(lpm[, i], rf_out$msums, decreasing = TRUE)
+
 
                clvl <- which(lbls[, 1] == lvls[i])
-               oopick <- sort(unique(unlist(lapply(1:length(clvl), function(x) head(which(rf_out$predictions_match[oo,
-                                                                                                                   clvl[x]]), n = akl_pars$topn/2)))))
+               oopick <- unique(
+                 unlist(
+                   lapply(
+                     1:length(clvl), function(x) {
+                       unique(c(rownames(probs)[order(probs[, x],decreasing=TRUE)[1:ceiling(akl_pars$topn/2)]],
+                              idx[which(probs[idx, x] > quantile(probs[, x], 0.95,na.rm=TRUE))]))
 
-               unique(c(rownames(lpm)[oo[oopick]], idx[which(lpm[idx, i] > quantile(lpm[, i], 0.95))]))
 
+                 })))
              }
              names(mult) <- lvls
 
              #################
-
-             probs<-rf_out$probabilities
-             probs[rf_out$predictions_match]<-NA
-             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:ceiling(akl_pars$topn/2)]])))
-             idx<-unique(c(idx,idx_1))
-             idx<-rownames(probs)[rownames(probs)%in%idx]
-
-             ##################
 
              mult <- c(list(combined = idx), mult)
 
