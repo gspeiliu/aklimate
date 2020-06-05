@@ -53,7 +53,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              ####################
              lvls <- levels(lbls[, 1])
              probs<-rf_out$probabilities
-             probs[rf_out$predictions_match]<-NA
+             probs[!rf_out$predictions_match]<-NA
              # lpm <- foreach(j = 1:nrow(rf_out$predictions), .combine = rbind) %docomb% {
              #   confM <- caret::confusionMatrix(factor(rf_out$predictions[j, ], levels = levels(lbls[, 1])),
              #                                   lbls[, 1])
