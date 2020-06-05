@@ -62,7 +62,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              }
              rownames(lpm) <- rownames(rf_out$predictions)
 
-
+              #######################################
              mult <- foreach(i = 1:length(lvls)) %do% {
                oo <- order(lpm[, i], rf_out$msums, decreasing = TRUE)
 
@@ -74,6 +74,17 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
 
              }
              names(mult) <- lvls
+
+             #################
+
+             probs<-rf_out$probabilities
+             probs[rf_out$predictions_match]<-NA
+             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:ceiling(akl_pars$topn/2)]])))
+             idx<-unique(c(idx,idx_1))
+             idx<-rownames(probs)[rownames(probs)%in%idx]
+
+             ##################
+
              mult <- c(list(combined = idx), mult)
 
              um <- unique(unlist(mult))
@@ -81,14 +92,6 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              names(krel) <- um
 
              idx <- rownames(rf_out$predictions)[rownames(rf_out$predictions)%in%um]
-
-
-             ##################
-             probs<-rf_out$probabilities
-             probs[rf_out$predictions_match]<-NA
-             idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:ceiling(akl_pars$topn/2)]])))
-             idx<-c(idx,idx_1)
-             idx<-rownames(probs)[rownames(probs)%in%idx]
 
            },
            regression={})
