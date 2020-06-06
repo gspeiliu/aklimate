@@ -1,7 +1,7 @@
 Package: aklimate
 Type: Package
 Title: AKLIMATE : Algorithm for Kernel Learning with Approximating Tree Ensembles
-Version: 0.1.0
+Version: 0.2.0
 Author: Vladislav (Vlado) Uzunangelov
 Maintainer: Vladislav Uzunangelov <uzunangelov@gmail.com>
 Description: AKLIMATE uses a stacked learning approach with Random Forest(RF) base learners and 

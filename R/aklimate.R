@@ -65,16 +65,11 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
 
               #######################################
              mult <- foreach(i = 1:length(lvls)) %do% {
-
-
                clvl <- which(lbls[, 1] == lvls[i])
-               oopick <- unique(
-                 unlist(
-                   lapply(
-                     1:length(clvl),
-                     function(x) {
-            unique(c(rownames(probs)[order(probs[, clvl[x]],decreasing=TRUE)[1:akl_pars$topn]],
-                     idx[which(probs[idx, clvl[x]] > quantile(probs[, clvl[x]], 0.95,na.rm=TRUE))]))
+               po<-rowSums(probs[,clvl],na.rm=TRUE)
+               oo<-order(po,decreasing=TRUE)
+               oopick <- unique(c(rownames(probs)[oo[1:akl_pars$topn]],
+                     idx[which(po[idx] > quantile(po, 0.95,na.rm=TRUE))]))
                  })))
              }
              names(mult) <- lvls
