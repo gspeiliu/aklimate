@@ -70,7 +70,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
                oo<-order(po,decreasing=TRUE)
                oopick <- unique(c(rownames(probs)[oo[1:akl_pars$topn]],
                      idx[which(po[idx] > quantile(po, 0.95,na.rm=TRUE))]))
-                 })))
+
              }
              names(mult) <- lvls
 
