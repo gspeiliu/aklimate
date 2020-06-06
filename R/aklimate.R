@@ -53,7 +53,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              ####################
              lvls <- levels(lbls[, 1])
              probs<-rf_out$probabilities
-             probs[!rf_out$predictions_match]<-NA
+             probs[!rf_out$predictions_match]<- -probs[!rf_out$predictions_match]
              # lpm <- foreach(j = 1:nrow(rf_out$predictions), .combine = rbind) %docomb% {
              #   confM <- caret::confusionMatrix(factor(rf_out$predictions[j, ], levels = levels(lbls[, 1])),
              #                                   lbls[, 1])
@@ -66,7 +66,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
               #######################################
              mult <- foreach(i = 1:length(lvls)) %do% {
                clvl <- which(lbls[, 1] == lvls[i])
-               po<-rowMeans(probs[,clvl],na.rm=TRUE)
+               po<-rowSums(probs[,clvl],na.rm=TRUE)
                oo<-order(po,decreasing=TRUE)
                oopick <- unique(c(rownames(probs)[oo[1:akl_pars$topn]],
                      idx[which(po[idx] > quantile(po, 0.95,na.rm=TRUE))]))
