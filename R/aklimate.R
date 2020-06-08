@@ -73,7 +73,8 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
                  sapply(1:nrow(probs),function(x) {
                    sum(probs[x,lbls[,1]!=lvls[i] &
                                rf_out$predictions[x,]==lvls[i] &
-                               !rf_out$predictions_match[x,]]))
+                               !rf_out$predictions_match[x,]])
+                   })
                oo<-order(po,decreasing=TRUE)
                oopick <- unique(c(rownames(probs)[oo[1:ceiling(akl_pars$topn/2)]],
                      idx[which(po[idx] > quantile(po, 0.95,na.rm=TRUE))]))
