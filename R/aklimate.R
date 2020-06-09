@@ -56,7 +56,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              ####################
              lvls <- levels(lbls[, 1])
              probs<-rf_out$probabilities
-             probs[!rf_out$predictions_match]<- -probs[!rf_out$predictions_match]
+             probs[!rf_out$predictions_match]<- 0
              # lpm <- foreach(j = 1:nrow(rf_out$predictions), .combine = rbind) %docomb% {
              #   confM <- caret::confusionMatrix(factor(rf_out$predictions[j, ], levels = levels(lbls[, 1])),
              #                                   lbls[, 1])
@@ -69,7 +69,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
               #######################################
              mult <- foreach(i = 1:length(lvls)) %do% {
                clvl <- which(lbls[, 1] == lvls[i])
-               po<-rowSums(probs[,clvl],na.rm=TRUE) +
+               po<-rowSums(probs[,clvl],na.rm=TRUE) -
                  sapply(1:nrow(probs),function(x) {
                    sum(probs[x,lbls[,1]!=lvls[i] &
                                rf_out$predictions[x,]==lvls[i] &
