@@ -42,11 +42,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
            binary={
 
              idx <- rownames(rf_out$predictions_match)[sort(unique(unlist(lapply(1:ncol(rf_out$predictions_match),function(x) head(which(rf_out$predictions_match[, x]), n = akl_pars$topn)))))]
-             # probs<-rf_out$probabilities
-             # probs[!rf_out$predictions_match]<-NA
-             # idx_1 <- unique(unlist(lapply(1:ncol(probs),function(x) rownames(probs)[order(probs[, x],decreasing=TRUE)[1:akl_pars$topn]])))
-             # idx<-c(idx,idx_1)
-             # idx<-rownames(probs)[rownames(probs)%in%idx]
+
 
            },
            multiclass={
@@ -57,14 +53,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
              lvls <- levels(lbls[, 1])
              probs<-rf_out$probabilities
              probs[!rf_out$predictions_match]<- 0
-             # lpm <- foreach(j = 1:nrow(rf_out$predictions), .combine = rbind) %docomb% {
-             #   confM <- caret::confusionMatrix(factor(rf_out$predictions[j, ], levels = levels(lbls[, 1])),
-             #                                   lbls[, 1])
-             #
-             #   unname(confM$byClass[, "Balanced Accuracy"])
-             #
-             # }
-             # rownames(lpm) <- rownames(rf_out$predictions)
+
 
               #######################################
              mult <- foreach(i = 1:length(lvls)) %do% {
