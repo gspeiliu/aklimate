@@ -1,0 +1,10 @@
+#####Version 0.2.1#################
+-Best RF kernel selection criteria for multiclass case modified to include probability measurements from component RFs. Change leads to a small improvement in prediction accuracy in internal testing. RF probabilities still not included in kernel selection for binary and regression cases.
+#####Version 0.2.0#################
+-Manu small adjustments to make the package work with minimum loading of other packages
+-substituted R-based functions for the C code in similarity::proximityMatrixRanger because the latter doesn't seem to work with ranger >=0.12
+-This is the first official package version that is recommended for public use
+#####Version 0.1.0#################
+-First packaged version of scripts used in AKLIMATE manuscript and PhD
+-One hot encoding which was previously applied to all unordered factor variables has now been removed. In case a user wants to recreate results from AKLIMATE manuscript, the one-hot encoding needs to be done manually to the data before it is provided as AKLIMATE input
+-Added capabilities for multi-class learning and probability calculation in classification settings
