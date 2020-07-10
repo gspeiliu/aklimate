@@ -67,7 +67,7 @@ An AKLIMATE model with the following components:
 *Output* \
 List with following elements:
 * preds : Predictions.If akl_obj$akl_pars$type is "response", this is a vector class predictions or regression estimates. If akl_obj$akl_pars$type is "probability" (classification tasks only), it is a matrix with predicted probabilities of membership for each class.
-* kernel : If store_kernels is TRUE, the test kernels. Default is FALSE.
+* kernels : If store_kernels is TRUE, the test kernels. Default is FALSE.
 
 **Citations** 
 1. V. J. Uzunangelov, C. Wong, J. Stuart. *AKLIMATE: Algorithm for Kernel Learning with Approximating Tree Ensembles.* 

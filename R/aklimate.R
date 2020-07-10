@@ -209,7 +209,7 @@ aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = lis
 #' @param store_kernels Boolean variable indicating whether test_kernels should be stored in output. Default is FALSE.
 #' @return List with the following elements
 #' \item {preds} {Predictions.If akl_obj$akl_pars$type is "response", this is a vector class predictions or regression estimates. If akl_obj$akl_pars$type is "probability" (classification tasks only), it is a matrix with predicted probabilities of membership for each class.}
-#' \item {kernel} {If store_kernels is TRUE, the test kernels. Default is FALSE.}
+#' \item {kernels} {If store_kernels is TRUE, the test kernels. Default is FALSE.}
 #' @export
 predict.aklimate <- function(akl_obj, dat, fsets, kernels = NULL, store_kernels = FALSE) {
 
