@@ -62,7 +62,7 @@ An AKLIMATE model with the following components:
 *dat* : samples x features data frame where columns might be of different type \
 *fsets* : list of prior knowledge feature sets \
 *kernels* : Pre-computed kernels for the MKL prediction part. By default the value is NULL, i.e. test kernels are computed on the fly from the RF models stored in the aklimate object. \
-*store_kernels* : Boolean variable indicating whether test_kernels should be stored in output. Default is FALSE. \
+*store_kernels* : Boolean variable indicating whether test_kernels should be stored in output. Default is FALSE. 
 
 *Output* \
 List with following elements:
