@@ -40,7 +40,7 @@ The data type suffixes should be distinct from one another so that none is a pro
 * subsetCV : TRUE/FALSE. When TRUE, the MKL CV step also randomly varies the number of RF kernels in addition to the MKL regularization hyperparameters. It does so by training on a subset of kernels of size K, randomly selected on the (0,number best RF kernels) interval. Once K is selected, the top K kernels (ranked by metric specified in rf_pars) are included in current CV run. Default is TRUE
 * type : Type of predictions - possible choices are "response" and "probability". Default is "response".
 *store_kernels* TRUE/FALSE. Should the model store the training RF kernels. Default is FALSE. \
-*verbose* TRUE/FALSE. Should the model print verbose progress statements. Default is FALSE. \
+*verbose* TRUE/FALSE. Should the model print verbose progress statements. Default is FALSE.
 
 *Output*\
 An AKLIMATE model with the following components:
