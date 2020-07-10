@@ -10,13 +10,13 @@ It can operate on continuous, binary, categorical, ordinal and count data, requi
 
 **Training**\
 *Inputs*\
-*dat* : samples x features data frame where columns might be of different type
+*dat* : samples x features data frame where columns might be of different type \
 *dat_grp* : a list of vectors, each consisting of suffixes for data types that match the ones used in dat. Each vector corresponds to a particular combination of data types that will be tested for each component RF. Only the data type combination with the
-best performance for a given feature set is retained.
-The data type suffixes should be distinct from one another so that none is a proper substring of another - i.e. c('cnv','cnv_gistic') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is
-*fsets* : list of prior knowledge feature sets
-*lbls* : vector of training data labels
-*always_add* : vector of dat column names that are to be included with each fset
+best performance for a given feature set is retained. 
+The data type suffixes should be distinct from one another so that none is a proper substring of another - i.e. c('cnv','cnv_gistic') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is. \
+*fsets* : list of prior knowledge feature sets. \
+*lbls* : vector of training data labels. \
+*always_add* : vector of dat column names that are to be included with each fset. \
 *rf_pars* : list of parameters for RF base kernels run
 * ntree : Number of trees for RF kernel construction. Default is 1000.
 * min_node_prop : Minimal size of leaf nodes (unit is proportion of training set size). Default is 0.01. 
@@ -39,8 +39,8 @@ The data type suffixes should be distinct from one another so that none is a pro
 * celnet : Hyperparameters for MKL elastic net run. Should be a vector of length 2. Default is NULL - hyperparameters are tuned via internal cross-validation.
 * subsetCV : TRUE/FALSE. When TRUE, the MKL CV step also randomly varies the number of RF kernels in addition to the MKL regularization hyperparameters. It does so by training on a subset of kernels of size K, randomly selected on the (0,number best RF kernels) interval. Once K is selected, the top K kernels (ranked by metric specified in rf_pars) are included in current CV run. Default is TRUE
 * type : Type of predictions - possible choices are "response" and "probability". Default is "response".
-*store_kernels* TRUE/FALSE. Should the model store the training RF kernels. Default is FALSE.
-*verbose* TRUE/FALSE. Should the model print verbose progress statements. Default is FALSE.
+*store_kernels* TRUE/FALSE. Should the model store the training RF kernels. Default is FALSE. \
+*verbose* TRUE/FALSE. Should the model print verbose progress statements. Default is FALSE. \
 
 *Output*\
 An AKLIMATE model with the following components:
@@ -57,15 +57,15 @@ An AKLIMATE model with the following components:
 * preds_train : AKLIMATE predictions on training set.
 
 **Prediction**\
-*Inputs*
-*akl_obj* : an AKLIMATE model
-*dat* : samples x features data frame where columns might be of different type
-*fsets* : list of prior knowledge feature sets
-*kernels* : Pre-computed kernels for the MKL prediction part. By default the value is NULL, i.e. test kernels are computed on the fly from the RF models stored in the aklimate object.
-*store_kernels* : Boolean variable indicating whether test_kernels should be stored in output. Default is FALSE.
+*Inputs* \
+*akl_obj* : an AKLIMATE model \
+*dat* : samples x features data frame where columns might be of different type \
+*fsets* : list of prior knowledge feature sets \
+*kernels* : Pre-computed kernels for the MKL prediction part. By default the value is NULL, i.e. test kernels are computed on the fly from the RF models stored in the aklimate object. \
+*store_kernels* : Boolean variable indicating whether test_kernels should be stored in output. Default is FALSE. \
 
 *Output* \
-List with the following elements
+List with following elements:
 * preds : Predictions.If akl_obj$akl_pars$type is "response", this is a vector class predictions or regression estimates. If akl_obj$akl_pars$type is "probability" (classification tasks only), it is a matrix with predicted probabilities of membership for each class.
 * kernel : If store_kernels is TRUE, the test kernels. Default is FALSE.
 
