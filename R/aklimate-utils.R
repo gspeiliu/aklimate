@@ -529,7 +529,7 @@ aklimate_pars_default<-function(akl_pars=list()) {
   if(is.null(akl_pars$topn)) akl_pars$topn <- 5
   if(is.null(akl_pars$cvlen)) akl_pars$cvlen <- 100
   if(is.null(akl_pars$nfold)) akl_pars$nfold <- 5
-  if(is.null(akl_pars$lamb)) akl_pars$lamb <- c(-8,3)
+  if(is.null(akl_pars$lamb)) akl_pars$lamb <- c(-20,0)
 
 
   akl_pars$subsetCV <- if(is.null(akl_pars$subsetCV)) TRUE else as.logical(match.arg(as.character(akl_pars$subsetCV),c("TRUE","FALSE")))
