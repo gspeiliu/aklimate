@@ -2,14 +2,14 @@
 % Please edit documentation in R/aklimate-utils.R
 \name{collapse_weights}
 \alias{collapse_weights}
-\title{Combine entries in a vector that match a particular pattern}
+\title{collapse_weights}
 \usage{
 collapse_weights(patterns, weights)
 }
 \arguments{
-\item{patterns}{- vector of patterns to match}
+\item{patterns}{vector of patterns to match}
 
-\item{weights}{- named numeric vector that needs to be collapsed based on the patterns}
+\item{weights}{named numeric vector that needs to be collapsed based on the patterns}
 }
 \value{
 A named vector of scores for each pattern, sorted from largest to smallest.

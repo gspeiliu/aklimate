@@ -2,12 +2,12 @@
 % Please edit documentation in R/aklimate-utils.R
 \name{rank_features}
 \alias{rank_features}
-\title{Feature importance calculation from an aklimate model}
+\title{rank_features}
 \usage{
 rank_features(akl_obj)
 }
 \arguments{
-\item{akl_obj}{- an aklimate model}
+\item{akl_obj}{an aklimate model}
 }
 \value{
 A ranked vector of all features with non-zero importance.

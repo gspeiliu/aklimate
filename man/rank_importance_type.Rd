@@ -2,14 +2,14 @@
 % Please edit documentation in R/aklimate-utils.R
 \name{rank_importance_type}
 \alias{rank_importance_type}
-\title{Relative contribution of data types based on cumulative importance of features}
+\title{rank_importance_type}
 \usage{
 rank_importance_type(suffs, ranked, intron = "_")
 }
 \arguments{
-\item{suffs}{- vector of suffixes of participating data types}
+\item{suffs}{vector of suffixes of participating data types}
 
-\item{ranked}{- vactor of ranked features produced by rank_features()}
+\item{ranked}{vector of ranked features produced by \code{rank_features}}
 }
 \value{
 A vector of controbutions for each data type, normalized to a sum of 1.

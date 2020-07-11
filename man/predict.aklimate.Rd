@@ -2,22 +2,30 @@
 % Please edit documentation in R/aklimate.R
 \name{predict.aklimate}
 \alias{predict.aklimate}
-\title{Compute predictions from an aklimate model}
+\title{predict.aklimate}
 \usage{
 \method{predict}{aklimate}(akl_obj, dat, fsets, kernels = NULL,
   store_kernels = FALSE)
 }
 \arguments{
-\item{akl_obj}{- an aklimate model}
+\item{akl_obj}{an AKLIMATE model}
 
-\item{dat}{- samples x features data frame where columns might be of different type}
+\item{dat}{samples x features data frame where columns might be of different type}
 
-\item{fsets}{- list of prior knowledge feature sets}
+\item{fsets}{list of prior knowledge feature sets}
 
-\item{kernels}{- (Optional) pre-computed kernels for the MKL prediction part. By default the test kernels are computed on the fly from the RF models stored in the aklimate object.}
+\item{kernels}{Pre-computed kernels for the MKL prediction part. By default the value is NULL, i.e. test kernels are computed on the fly from the RF models stored in the aklimate object.}
+
+\item{store_kernels}{Boolean variable indicating whether test_kernels should be stored in output. Default is FALSE.}
 }
 \value{
-A vector of predictions.
+List with the following elements:
+\describe{
+\item{preds}{Predictions. \cr
+If akl_obj$akl_pars$type is "response", this is a vector class predictions or regression estimates. \cr
+If akl_obj$akl_pars$type is "probability" (classification tasks only), it is a matrix with predicted probabilities of membership for each class.}
+\item{kernels}{If store_kernels is TRUE, the test kernels. Default is FALSE.}
+}
 }
 \description{
 Compute predictions from an aklimate model

@@ -77,8 +77,9 @@ sample_sim_vect_eucl_mask <- function(source,target,mask) {
 }
 
 #'Relative contribution of data types based on cumulative importance of features
-#' @param suffs - vector of suffixes of participating data types
-#' @param ranked - vactor of ranked features produced by rank_features()
+#'@title rank_importance_type
+#' @param suffs vector of suffixes of participating data types
+#' @param ranked vector of ranked features produced by \code{rank_features}
 #' @return A vector of controbutions for each data type, normalized to a sum of 1.
 #' @export
 rank_importance_type <- function(suffs,ranked,intron="_") {
@@ -113,8 +114,9 @@ clean_names <- function(names) {
 }
 
 #' Combine entries in a vector that match a particular pattern
-#' @param patterns - vector of patterns to match
-#' @param weights - named numeric vector that needs to be collapsed based on the patterns
+#' @title collapse_weights
+#' @param patterns vector of patterns to match
+#' @param weights named numeric vector that needs to be collapsed based on the patterns
 #' @return A named vector of scores for each pattern, sorted from largest to smallest.
 #' @export
 collapse_weights<-function(patterns, weights){
@@ -1280,7 +1282,8 @@ forest_to_kernel_oob <- function(rf_models,dat,dat_grp,fsets,always_add=NULL,idx
 }
 
 #' Feature importance calculation from an aklimate model
-#' @param akl_obj - an aklimate model
+#' @title rank_features
+#' @param akl_obj an aklimate model
 #' @return A ranked vector of all features with non-zero importance.
 #' @export
 rank_features <- function(akl_obj) {
