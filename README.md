@@ -1,6 +1,7 @@
 **AKLIMATE: Algorithm for Kernel Learning with Approximating Tree Ensembles**
 
-This is an R package of AKLIMATE as described in [1]. AKLIMATE is a stacked learning algorithm that integrates multi-modal data and "prior knowledge" feature sets directly into its learning process. It does so by 
+This is an R package of AKLIMATE as described in [1]. AKLIMATE is a stacked kernel learning algorithm that integrates multi-modal data and "prior knowledge" feature sets.\
+It does so by: 
 1. Creating a collection of Random Forest base learners, each based off of the features in an individual feature set.
 2. Converting the most relevant RF base learners into integrative RF kernels
 3. Combining the RF kernels into an optimal meta-kernel via Multiple Kernel Learning.
@@ -13,7 +14,7 @@ It can operate on continuous, binary, categorical, ordinal and count data, requi
 *dat* : samples x features data frame where columns might be of different type \
 *dat_grp* : a list of vectors, each consisting of suffixes for data types that match the ones used in dat. Each vector corresponds to a particular combination of data types that will be tested for each component RF. Only the data type combination with the
 best performance for a given feature set is retained. 
-The data type suffixes should be distinct from one another so that none is a proper substring of another - i.e. c('cnv','cnv_gistic') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is. \
+The data type suffixes should be distinct from one another so that none is a proper substring of another - i.e. c('CNV','CNV_GISTIC') is not OK, but c('MUTA:HOT','MUTA:NONSENSE') is. \
 *fsets* : list of prior knowledge feature sets. \
 *lbls* : vector of training data labels. \
 *always_add* : vector of dat column names that are to be included with each fset. \
@@ -22,7 +23,7 @@ The data type suffixes should be distinct from one another so that none is a pro
 * min_node_prop : Minimal size of leaf nodes (unit is proportion of training set size). Default is 0.01. 
 * min_nfeat : Minimal size of feature set (across all data modalities) for an RF to be constructed. Default is 15.
 * mtry_prop : Proportion of features to be considered for each splitting decision. Default is 0.25
-* regression_q : For regression predictions only. Quantile of the empirical distribution of absolute differences between RF sample predictions and label to be used for binarization of sample predictions during best RF selection. Default is 0.05
+* regression_q : For regression predictions only. Quantile of the per-sample empirical distribution of absolute differences between RF sample predictions and sample label. Used for binarization of sample predictions during best RF selection. Default 0.05.
 * replace : TRUE/FALSE. Is subsampling to be done with replacement? Default is FALSE.
 * sample_frac : Fraction of training data points to subsample for each tree. Default is 0.5 for sampling without replacement and 1 for bootstrapping.
 * ttype : Type of learning task - choices are "binary","multiclass", and "regression". Default is "binary".
@@ -70,7 +71,7 @@ List with following elements:
 * kernels : If store_kernels is TRUE, the test kernels. Default is FALSE.
 
 **Citations** 
-1. V. J. Uzunangelov, C. Wong, J. Stuart. *AKLIMATE: Algorithm for Kernel Learning with Approximating Tree Ensembles.* 
+1.  V. Uzunangelov, C. K. Wong, and J. Stuart. *Highly Accurate Cancer Phenotype Prediction with AKLIMATE, a Stacked Kernel Learner Integrating Multimodal Genomic Data and Pathway Knowledge.* bioRxiv, July 2020.
 
-(c) Vlado Uzunangelov 2019  
+(c) Vladislav Uzunangelov 2019  
 uzunangelov@gmail.com

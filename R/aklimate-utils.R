@@ -80,7 +80,7 @@ sample_sim_vect_eucl_mask <- function(source,target,mask) {
 #'@title rank_importance_type
 #' @param suffs vector of suffixes of participating data types
 #' @param ranked vector of ranked features produced by \code{rank_features}
-#' @return A vector of controbutions for each data type, normalized to a sum of 1.
+#' @return A vector of contributions for each data type, normalized to a sum of 1.
 #' @export
 rank_importance_type <- function(suffs,ranked,intron="_") {
 

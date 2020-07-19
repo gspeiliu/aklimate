@@ -15,7 +15,7 @@
 #' \item{min_node_prop}{Minimal size of leaf nodes (unit is proportion of training set size). Default is 0.01.}
 #' \item{min_nfeat}{Minimal size of feature set (across all data modalities) for an RF to be constructed. Default is 15.}
 #' \item{mtry_prop}{Proportion of features to be considered for each splitting decision. Default is 0.25}
-#' \item{regression_q}{ For regression predictions only. Quantile of the empirical distribution of absolute differences between RF sample predictions and label to be used for binarization of sample predictions during best RF selection. Default is 0.05}
+#' \item{regression_q}{ For regression predictions only. Quantile of the per-sample empirical distribution of absolute differences between RF sample predictions and sample label. Used for binarization of sample predictions during best RF selection. Default 0.05.}
 #' \item{replace}{TRUE/FALSE. Is subsampling to be done with replacement? Default is FALSE.}
 #' \item{sample_frac}{Fraction of training data points to subsample for each tree. Default is 0.5 for sampling without replacement and 1 for bootstrapping.}
 #' \item{ttype}{Type of learning task - choices are "binary","multiclass", and "regression". Default is "binary".}
@@ -51,6 +51,10 @@
 #' \item{idx_train}{Vector of training data instances.}
 #' \item{preds_train}{AKLIMATE predictions on training set.}
 #' }
+#' @references
+#'   \itemize{
+#'   \item  V. Uzunangelov, C. K. Wong, and J. Stuart. Highly Accurate Cancer Phenotype Prediction with AKLIMATE, a Stacked Kernel Learner Integrating Multimodal Genomic Data and Pathway Knowledge. bioRxiv, July 2020.
+#'   }
 #' @export
 aklimate <- function(dat, dat_grp, lbls, fsets, always_add = NULL, rf_pars = list(), akl_pars = list(),
     store_kernels = FALSE, verbose = FALSE) {
