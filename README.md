@@ -9,6 +9,10 @@ It does so by :
 AKLIMATE can handle binary and multiclass classification as well as regression tasks.
 It can operate on continuous, binary, categorical, ordinal and count data, requires minimal pre-processing and can query thousands of feature sets.
 
+**Installation**\
+Requires devtools package. From an R interpreter do: \
+devtools::install_github("VladoUzunangelov/aklimate")
+
 **Training**\
 *Inputs*\
 *dat* : samples x features data frame where columns might be of different type \
