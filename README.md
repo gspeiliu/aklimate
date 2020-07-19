@@ -1,8 +1,8 @@
 **AKLIMATE: Algorithm for Kernel Learning with Approximating Tree Ensembles**
 
 This is an R package of AKLIMATE as described in [1]. AKLIMATE is a stacked kernel learning algorithm that integrates multi-modal data and "prior knowledge" feature sets.\
-It does so by: 
-1. Creating a collection of Random Forest base learners, each based off of the features in an individual feature set.
+It does so by : 
+1. Creating a collection of Random Forest base learners, each trained on the features in an individual feature set.
 2. Converting the most relevant RF base learners into integrative RF kernels
 3. Combining the RF kernels into an optimal meta-kernel via Multiple Kernel Learning.
 
@@ -46,12 +46,12 @@ The data type suffixes should be distinct from one another so that none is a pro
 *Output*\
 An AKLIMATE model with the following components:
 * rf_stats : List of metrics and predictions from training run on all RF base learners.
-* kernels : RF kernels used in MKL training step. NULL id store_kernels is set to FALSE. 
-* kern_cv : if akl_pars$celnet is NULL, heyperparameter vectors examined during MKL cross-validation, along with matching metric scores.
+* kernels : RF kernels used in MKL training step. NULL if store_kernels is set to FALSE. 
+* kern_cv : if akl_pars$celnet is NULL, hyperparameter vectors examined during MKL cross-validation, along with matching metric scores.
 * rf_models : Set of RF base learners used to produce RF kernels for stacked MKL.
 * akl_model : Trained spicer MKL model, with either user-supplied elastic net hyperparameters, or the hyperparameters selected via CV tuning.
 * rf_pars_global : rf_pars argument
-* rf_pars_local : optimal RF parameters for each RF base learner. Those will be the same (with the exception of ntree) as the rf_pars_global parameters except if rf_pars$oob_cv was specified by the user.
+* rf_pars_local : optimal RF parameters for each RF base learner. Those will be the same (with the exception of ntree) as the rf_pars_global parameters unless rf_pars$oob_cv was specified by the user.
 * akl_pars : akl_pars argument
 * dat_grp : dat_grp argument
 * idx_train : Vector of training data instances.

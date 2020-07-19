@@ -40,12 +40,12 @@
 #' @return a model of class AKLIMATE with the following fields:
 #' \describe{
 #' \item{rf_stats}{List of metrics and predictions from training run on all RF base learners.}
-#' \item{kernels}{ RF kernels used in MKL training step. NULL id store_kernels is set to FALSE. }
-#' \item{kern_cv}{if akl_pars$celnet is NULL, heyperparameter vectors examined during MKL cross-validation, along with matching metric scores.}
+#' \item{kernels}{ RF kernels used in MKL training step. NULL if store_kernels is set to FALSE. }
+#' \item{kern_cv}{if akl_pars$celnet is NULL, hyperparameter vectors examined during MKL cross-validation, along with matching metric scores.}
 #' \item{rf_models}{Set of RF base learners used to produce RF kernels for stacked MKL.}
 #' \item{akl_model}{Trained spicer MKL model, with either user-supplied elastic net hyperparameters, or the hyperparameters selected via CV tuning.}
 #' \item{rf_pars_global}{rf_pars argument}
-#' \item{rf_pars_local}{optimal RF parameters for each RF base learner. Those will be the same (with the exception of ntree) as the rf_pars_global parameters except if rf_pars$oob_cv was specified by the user.}
+#' \item{rf_pars_local}{optimal RF parameters for each RF base learner. Those will be the same (with the exception of ntree) as the rf_pars_global parameters unless rf_pars$oob_cv was specified by the user.}
 #' \item{akl_pars}{akl_pars argument}
 #' \item{dat_grp}{dat_grp argument}
 #' \item{idx_train}{Vector of training data instances.}
