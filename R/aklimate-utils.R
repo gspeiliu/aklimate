@@ -1649,7 +1649,7 @@ plot_heatmap <- function(feat_wghts,dat_grp,dat,lbls,pdf_title,fset_wghts=NULL,f
 
         ###################################################################
 
-        pushViewport(viewport(layout.pos.row =i, layout.pos_col = 1))
+        pushViewport(viewport(layout.pos.row =i, layout.pos.col = 1))
 
         .spl <- if(nrow(dat_curr)>10) hsplit else NULL
         draw(layer,
