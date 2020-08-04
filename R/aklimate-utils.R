@@ -1509,8 +1509,8 @@ plot_heatmap <- function(feat_wghts,dat_grp,dat,lbls,pdf_title,fset_wghts=NULL,f
     ##Plotting and Display
 
     pdf(pdf_title,paper="a4",
-        width=unit(8,"inches"),
-        height=unit(12*sum(num_feats)/100,"inches"))
+        width=unit(10,"inches"),
+        height=unit(12*sum(num_feats)/80,"inches"))
     grid.newpage()
     main_vp <- viewport(name="main_vp",
                         layout = grid.layout(nr = length(uniq_dtypes),
