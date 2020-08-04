@@ -176,9 +176,20 @@ split_set_suff <- function(combined,dat_grp,...){
     return(list(fset_ind=fset_ind,feat_suff=feat_suff))
 }
 
-extract_features<-function(allfeats,infeats,ids){
-    allfeats[grepl(paste(infeats,collapse="|"),allfeats,ignore.case = TRUE)&
-             grepl(paste(ids,collapse="|"),allfeats,ignore.case = TRUE)]
+extract_features<-function (allfeats, infeats, ids,sep="_"){
+  
+  allfeats[(grepl(paste0("^",infeats,sep, collapse = "|"), allfeats,
+
+                 ignore.case = TRUE) |
+
+              grepl(paste0(sep,infeats,sep, collapse = "|"), allfeats,
+
+                    ignore.case = TRUE) ) &
+
+              grepl(paste0(sep,ids,"$",collapse = "|"),
+
+                    allfeats, ignore.case = TRUE)]
+
 }
 
 
@@ -639,7 +650,7 @@ train_forest_stats <- function(dat,dat_grp,fsets,lbls,rf_pars_global=rf_pars_def
         vv <- foreach(j=iter(dat_grp)) %do% {
             tt <- foreach(i=iter(fsets)) %docomb% {
 
-                feats<-extract_features(colnames(dat),i,j)
+                feats<-extract_features(colnames(dat),i,j,sep)
 
                 if(length(feats)<rf_pars_global$min_nfeat) return(list(metric=NA,imps=NA,preds=NA))
 
@@ -822,7 +833,7 @@ train_forest_kernels <- function(dat,dat_grp,fsets,lbls,rf_pars_local,rf_pars_gl
         ##feat_suff is a vector of suffices that denominate data types
         SPICER::expand(split_set_suff(i,dat_grp),nms=c("fset_ind","feat_suff"))
 
-        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff)
+        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff,sep)
 
         ##feats <- colnames(dat)[colnames(dat)%in%expand_names(fsets[[fset_ind]],feat_suff,sep)]
 
@@ -881,7 +892,7 @@ forest_to_kernel <- function(rf_models,dat,dat_grp,fsets,always_add=NULL,idx_tra
 
         SPICER::expand(split_set_suff(i,dat_grp),nms=c("fset_ind","feat_suff"))
 
-        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff)
+        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff,sep)
 
 
         curr_dat <- dat[,unique(c(feats,always_add)),drop=FALSE]
@@ -1077,7 +1088,7 @@ forest_to_kernel_oob <- function(rf_models,dat,dat_grp,fsets,always_add=NULL,idx
 
         SPICER::expand(split_set_suff(i,dat_grp),nms=c("fset_ind","feat_suff"))
 
-        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff)
+        feats<-extract_features(colnames(dat),fsets[[fset_ind]],feat_suff,sep)
 
         curr_dat <- dat[,unique(c(feats,always_add)),drop=FALSE]
         ##curr_dat <- mlr::createDummyFeatures(curr_dat)
@@ -1649,7 +1660,7 @@ plot_heatmap <- function(feat_wghts,dat_grp,dat,lbls,pdf_title,fset_wghts=NULL,f
 
         ###################################################################
 
-        pushViewport(viewport(layout.pos.row =i, layout.pos_col = 1))
+        pushViewport(viewport(layout.pos.row =i, layout.pos.col = 1))
 
         .spl <- if(nrow(dat_curr)>10) hsplit else NULL
         draw(layer,
