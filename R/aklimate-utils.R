@@ -177,7 +177,7 @@ split_set_suff <- function(combined,dat_grp,...){
 }
 
 extract_features<-function (allfeats, infeats, ids,sep="_"){
-  
+
   allfeats[(grepl(paste0("^",infeats,sep, collapse = "|"), allfeats,
 
                  ignore.case = TRUE) |
@@ -1342,10 +1342,10 @@ rank_features <- function(akl_obj) {
     } else {
         wghts <- akl_obj$akl_model$sorted_kern_weight
         imps <- foreach(i=iter(names(wghts)))%do%{
-            ind<-which(stringr::str_detect(i,names(akl_obj$rf_models)))
-            res <- sort(ranger::importance(akl_obj$rf_models[[ind]]),decreasing=TRUE)
-            res <- res[res>0]
-            res
+          ind<-which(stringr::str_detect(i,paste0("^",names(akl_obj$rf_models))))
+          res <- sort(ranger::importance(akl_obj$rf_models[[ind]]),decreasing=TRUE)
+          res <- res[res>0]
+          res
         }
         names(imps) <- names(wghts)
 
