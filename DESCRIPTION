@@ -35,7 +35,7 @@ Imports:
     iterators,
     doParallel,
     SPICER (>= 0.1.0),
-    Similarity (>= 0.1.0)
+    similarity (>= 0.1.0)
 Remotes:  
     VladoUzunangelov/similarity,
     VladoUzunangelov/SPICER
